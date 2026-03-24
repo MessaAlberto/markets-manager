@@ -1,5 +1,6 @@
+// api/income.ts
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { updateEventIncome } from './utils_sheet';
+import { sheets, SPREADSHEET_ID, MARKET_SHEET_NAME, findRowById } from './googleClient';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'PUT') {
@@ -14,7 +15,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ success: false, message: 'Missing required fields' });
     }
 
-    await updateEventIncome(id, parseFloat(income));
+    const rowToUpdate = await findRowById(MARKET_SHEET_NAME, id);
+    if (rowToUpdate === -1) throw new Error("Event not found");
+
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `${MARKET_SHEET_NAME}!G${rowToUpdate}`,
+      valueInputOption: 'USER_ENTERED',
+      requestBody: {
+        values: [[parseFloat(income)]],
+      },
+    });
+
     return res.status(200).json({ success: true });
   } catch (error) {
     console.error(error);

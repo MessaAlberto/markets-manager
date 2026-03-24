@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { appendEvent, updateEvent } from './utils_sheet';
+import { sheets, SPREADSHEET_ID, MARKET_SHEET_NAME, findRowById, deleteRowById } from './googleClient';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const method = req.method;
@@ -10,8 +10,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return await handlePost(req, res);
       case 'PUT':
         return await handlePut(req, res);
+      case 'DELETE':
+        return await handleDelete(req, res);
       default:
-        res.setHeader('Allow', ['POST', 'PUT']);
+        res.setHeader('Allow', ['POST', 'PUT', 'DELETE']);
         return res.status(405).json({ success: false, message: `Method ${method} Not Allowed` });
     }
   } catch (error) {
@@ -27,7 +29,17 @@ async function handlePost(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ success: false, message: 'Missing required fields' });
   }
 
-  const newId = await appendEvent(name, location, date, participationCost, alreadyPaid);
+  const newId = Date.now();
+
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `${MARKET_SHEET_NAME}!A:F`,
+    valueInputOption: 'USER_ENTERED',
+    requestBody: {
+      values: [[newId, name, location, date, participationCost, alreadyPaid]],
+    },
+  });
+
   return res.status(200).json({ success: true, id: newId });
 }
 
@@ -38,6 +50,27 @@ async function handlePut(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ success: false, message: 'Missing required fields' });
   }
 
-  await updateEvent(id, name, location, date, participationCost, alreadyPaid, income);
+  const rowToUpdate = await findRowById(MARKET_SHEET_NAME, id);
+  if (rowToUpdate === -1) throw new Error("Event not found");
+
+  const incomeValue = income != null ? income : "";
+
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `${MARKET_SHEET_NAME}!A${rowToUpdate}:G${rowToUpdate}`,
+    valueInputOption: 'USER_ENTERED',
+    requestBody: {
+      values: [[id, name, location, date, participationCost, alreadyPaid, incomeValue]],
+    },
+  });
+
+  return res.status(200).json({ success: true });
+}
+
+async function handleDelete(req: VercelRequest, res: VercelResponse) {
+  const { id } = req.body;
+  if (!id) return res.status(400).json({ success: false, message: 'Missing ID' });
+
+  await deleteRowById(MARKET_SHEET_NAME, id);
   return res.status(200).json({ success: true });
 }
