@@ -27,7 +27,6 @@ const CHART_COLOR = "hsl(210, 60%, 45%)";
 const INCOME_COLOR = "hsl(145, 50%, 42%)";
 const EXPENSE_COLOR = "hsl(15, 75%, 55%)";
 
-// Definiamo delle costanti per i valori vuoti
 const EMPTY_LOCATION = "(Nessun Luogo)";
 const EMPTY_EVENT = "(Nessun Evento)";
 
@@ -47,7 +46,7 @@ function filterByTime<T extends { date: string }>(items: T[], tf: TimeFilter, sp
   });
 }
 
-function sortChronologically(data: { name: string; [k: string]: any }[], keyFormat: string) {
+function sortChronologically(data: { name: string;[k: string]: any }[], keyFormat: string) {
   return [...data].sort((a, b) => {
     try {
       const da = parse(a.name, keyFormat, new Date());
@@ -89,15 +88,13 @@ const StatisticsPage = ({ events, expenses }: Props) => {
 
   const pastEvents = events.filter(e => new Date(e.date) <= new Date());
 
-  // Raggruppa le location, trasformando quelle vuote in "(Nessun Luogo)"
-  const locations = useMemo(() => 
-    [...new Set(pastEvents.map(e => (e.location && e.location.trim() !== "") ? e.location : EMPTY_LOCATION))].sort(), 
-  [pastEvents]);
-  
-  // Raggruppa gli eventi, trasformando quelli vuoti in "(Nessun Evento)"
-  const eventNames = useMemo(() => 
-    [...new Set(pastEvents.map(e => (e.name && e.name.trim() !== "") ? e.name : EMPTY_EVENT))].sort(), 
-  [pastEvents]);
+  const locations = useMemo(() =>
+    [...new Set(pastEvents.map(e => (e.location && e.location.trim() !== "") ? e.location : EMPTY_LOCATION))].sort(),
+    [pastEvents]);
+
+  const eventNames = useMemo(() =>
+    [...new Set(pastEvents.map(e => (e.name && e.name.trim() !== "") ? e.name : EMPTY_EVENT))].sort(),
+    [pastEvents]);
 
   const periods = useMemo(() => {
     const dates = mode === "markets" ? pastEvents.map(e => e.date) : expenses.map(e => e.date);
@@ -120,8 +117,7 @@ const StatisticsPage = ({ events, expenses }: Props) => {
 
   const filteredEvents = useMemo(() => {
     let data = filterByTime(pastEvents, timeFilter, effectivePeriod);
-    
-    // Logica di filtraggio Location aggiornata
+
     if (locationFilter) {
       if (locationFilter === EMPTY_LOCATION) {
         data = data.filter(e => !e.location || e.location.trim() === "");
@@ -129,8 +125,7 @@ const StatisticsPage = ({ events, expenses }: Props) => {
         data = data.filter(e => e.location === locationFilter);
       }
     }
-    
-    // Logica di filtraggio Evento aggiornata
+
     if (eventFilter) {
       if (eventFilter === EMPTY_EVENT) {
         data = data.filter(e => !e.name || e.name.trim() === "");
@@ -138,7 +133,7 @@ const StatisticsPage = ({ events, expenses }: Props) => {
         data = data.filter(e => e.name === eventFilter);
       }
     }
-    
+
     return data;
   }, [pastEvents, timeFilter, effectivePeriod, locationFilter, eventFilter]);
 
@@ -150,12 +145,11 @@ const StatisticsPage = ({ events, expenses }: Props) => {
   const buildGrouped = (key: "location" | "name") => {
     const map = new Map<string, { count: number; totalIncome: number }>();
     filteredEvents.forEach(e => {
-      // Sostituisce la stringa vuota con il nome ufficiale per il grafico
       let k = e[key];
       if (!k || k.trim() === "") {
         k = key === "location" ? EMPTY_LOCATION : EMPTY_EVENT;
       }
-      
+
       const d = map.get(k) || { count: 0, totalIncome: 0 };
       d.count++;
       d.totalIncome += e.income || 0;
@@ -195,22 +189,51 @@ const StatisticsPage = ({ events, expenses }: Props) => {
   }, [filteredExpenses]);
 
   const ChartCard = ({ title, dataKey, color, data: chartData }: { title: string; dataKey: string; color: string; data: any[] }) => (
-    <div className="bg-card rounded-xl p-4 border border-border shadow-sm">
-      <h3 className="font-bold text-sm mb-3">{title}</h3>
+    <div className="bg-card rounded-xl p-2 border border-border shadow-sm">
+      <h3 className="font-bold text-sm mb-1 ml-1">{title}</h3>
       {chartData.length === 0 ? (
         <p className="text-muted-foreground text-center py-6 text-sm">No data</p>
       ) : (
-        <ResponsiveContainer width="100%" height={180}>
-          <BarChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: -10 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(40,15%,88%)" />
-            <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-30} textAnchor="end" height={50} />
-            <YAxis tick={{ fontSize: 10 }} />
-            <Tooltip />
-            <Bar dataKey={dataKey} radius={[4, 4, 0, 0]}>
-              {chartData.map((_, i) => <Cell key={i} fill={color} />)}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+        <div className="flex items-start h-[220px] w-full overflow-hidden">
+
+          <div className="w-[40px] shrink-0 bg-card h-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} margin={{ top: 5, right: 0, bottom: 5, left: 0 }}>
+                <Bar dataKey={dataKey} fill="transparent" isAnimationActive={false} />
+                <YAxis width={35} tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                <XAxis dataKey="name" tick={false} axisLine={false} tickLine={false} height={50} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="flex-1 overflow-x-auto h-full border-l border-border/50">
+            <div style={{ minWidth: chartData.length > 5 ? `${chartData.length * 28}px` : '100%', height: '100%' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={chartData}
+                  margin={{ top: 5, right: 10, bottom: 5, left: 0 }}
+                  barCategoryGap="15%"
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(40,15%,88%)" vertical={false} />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 12 }}
+                    interval={0}
+                    angle={30}
+                    textAnchor="start"
+                    height={50}
+                  />
+                  <YAxis hide />
+                  <Tooltip cursor={{ fill: 'rgba(0,0,0,0.05)' }} />
+                  <Bar dataKey={dataKey} radius={[3, 3, 0, 0]}>
+                    {chartData.map((_, i) => <Cell key={i} fill={color} />)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+        </div>
       )}
     </div>
   );
@@ -289,17 +312,15 @@ const StatisticsPage = ({ events, expenses }: Props) => {
       <div className="flex gap-2 mb-4">
         <button
           onClick={() => { setMode("markets"); setTimeFilter("all"); setSpecificPeriod(""); }}
-          className={`flex-1 py-2.5 rounded-full text-sm font-bold transition-colors ${
-            mode === "markets" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-          }`}
+          className={`flex-1 py-2.5 rounded-full text-sm font-bold transition-colors ${mode === "markets" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+            }`}
         >
           Markets
         </button>
         <button
           onClick={() => { setMode("expenses"); setTimeFilter("all"); setSpecificPeriod(""); }}
-          className={`flex-1 py-2.5 rounded-full text-sm font-bold transition-colors ${
-            mode === "expenses" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-          }`}
+          className={`flex-1 py-2.5 rounded-full text-sm font-bold transition-colors ${mode === "expenses" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+            }`}
         >
           Expenses
         </button>
