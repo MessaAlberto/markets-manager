@@ -1,0 +1,141 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 40 33% 98%;
+    --foreground: 220 20% 18%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 20% 18%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 20% 18%;
+
+    --primary: 210 60% 45%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 40 30% 94%;
+    --secondary-foreground: 220 20% 25%;
+
+    --muted: 40 20% 93%;
+    --muted-foreground: 220 10% 50%;
+
+    --accent: 40 30% 90%;
+    --accent-foreground: 220 20% 18%;
+
+    --destructive: 0 65% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 40 15% 88%;
+    --input: 40 15% 88%;
+    --ring: 210 60% 45%;
+
+    --radius: 0.75rem;
+
+    /* Custom tokens */
+    --income: 145 50% 42%;
+    --income-foreground: 0 0% 100%;
+    --expense: 15 75% 55%;
+    --expense-foreground: 0 0% 100%;
+    --profit: 210 60% 45%;
+    --profit-foreground: 0 0% 100%;
+    --nav-bg: 0 0% 100%;
+    --nav-active: 210 60% 45%;
+    --nav-inactive: 220 10% 60%;
+    --fab: 210 60% 45%;
+    --fab-foreground: 0 0% 100%;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Nunito', sans-serif;
+  }
+}
+
+@layer utilities {
+  .text-income {
+    color: hsl(var(--income));
+  }
+  .text-expense {
+    color: hsl(var(--expense));
+  }
+  .text-profit {
+    color: hsl(var(--profit));
+  }
+  .bg-income {
+    background-color: hsl(var(--income));
+  }
+  .bg-expense {
+    background-color: hsl(var(--expense));
+  }
+  .bg-profit {
+    background-color: hsl(var(--profit));
+  }
+  .bg-nav {
+    background-color: hsl(var(--nav-bg));
+  }
+  .text-nav-active {
+    color: hsl(var(--nav-active));
+  }
+  .text-nav-inactive {
+    color: hsl(var(--nav-inactive));
+  }
+  .bg-fab {
+    background-color: hsl(var(--fab));
+  }
+  .text-fab-foreground {
+    color: hsl(var(--fab-foreground));
+  }
+}
+
+@layer base {
+  select {
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.875rem;
+    font-weight: 600;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-color: hsl(var(--card));
+    color: hsl(var(--foreground));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    padding: 0.5rem 2.25rem 0.5rem 0.75rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+  }
+
+  select option {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 600;
+  }
+}
+
+/* Hide scrollbars globally */
+* {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+*::-webkit-scrollbar {
+  display: none;
+}

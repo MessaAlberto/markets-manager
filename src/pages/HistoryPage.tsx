@@ -1,0 +1,182 @@
+import { useState } from "react";
+import { MapPin, Calendar, DollarSign } from "lucide-react";
+import { MarketEvent, Expense } from "@/lib/store";
+import EventContextMenu from "@/components/EventContextMenu";
+import { format, isPast } from "date-fns";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+interface Props {
+  events: MarketEvent[];
+  expenses: Expense[];
+  onDeleteEvent: (id: string) => void;
+  onDeleteExpense: (id: string) => void;
+  onEditEvent: (event: MarketEvent) => void;
+  onEditExpense: (expense: Expense) => void;
+}
+
+type ViewType = "events" | "expenses";
+type SortType = "date-desc" | "date-asc" | "cost-desc" | "cost-asc";
+
+const HistoryPage = ({ events, expenses, onDeleteEvent, onDeleteExpense, onEditEvent, onEditExpense }: Props) => {
+  const [view, setView] = useState<ViewType>("events");
+  const [sort, setSort] = useState<SortType>("date-desc");
+  const [contextMenu, setContextMenu] = useState<{ open: boolean; id: string; pos: { x: number; y: number } }>({ open: false, id: "", pos: { x: 0, y: 0 } });
+
+  const pastEvents = events
+    .filter((e) => isPast(new Date(e.date)))
+    .sort((a, b) => {
+      switch (sort) {
+        case "date-desc": return new Date(b.date).getTime() - new Date(a.date).getTime();
+        case "date-asc": return new Date(a.date).getTime() - new Date(b.date).getTime();
+        case "cost-desc": return (b.income || 0) - (a.income || 0);
+        case "cost-asc": return (a.income || 0) - (b.income || 0);
+      }
+    });
+
+  const sortedExpenses = [...expenses].sort((a, b) => {
+    switch (sort) {
+      case "date-desc": return new Date(b.date).getTime() - new Date(a.date).getTime();
+      case "date-asc": return new Date(a.date).getTime() - new Date(b.date).getTime();
+      case "cost-desc": return b.cost - a.cost;
+      case "cost-asc": return a.cost - b.cost;
+    }
+  });
+
+  const handleLongPress = (id: string, e: React.TouchEvent | React.MouseEvent) => {
+    e.preventDefault();
+    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+    const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+    setContextMenu({ open: true, id, pos: { x: clientX, y: clientY } });
+  };
+
+  const handleEdit = () => {
+    if (view === "events") {
+      const event = events.find(e => e.id === contextMenu.id);
+      if (event) onEditEvent(event);
+    } else {
+      const expense = expenses.find(e => e.id === contextMenu.id);
+      if (expense) onEditExpense(expense);
+    }
+  };
+
+  return (
+    <div className="px-4 pt-2 pb-4">
+      <h1 className="text-2xl font-extrabold mb-4">History</h1>
+
+      <div className="flex gap-2 mb-3">
+        <button
+          onClick={() => setView("events")}
+          className={`flex-1 py-2.5 rounded-full text-sm font-bold transition-colors ${
+            view === "events" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+          }`}
+        >
+          Market Events
+        </button>
+        <button
+          onClick={() => setView("expenses")}
+          className={`flex-1 py-2.5 rounded-full text-sm font-bold transition-colors ${
+            view === "expenses" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+          }`}
+        >
+          Expenses
+        </button>
+      </div>
+
+      <div className="mb-4">
+        <span className="text-xs font-semibold text-muted-foreground mb-1 block">Sort by:</span>
+        <Select value={sort} onValueChange={(v) => setSort(v as SortType)}>
+          <SelectTrigger className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="date-desc">Newest first</SelectItem>
+            <SelectItem value="date-asc">Oldest first</SelectItem>
+            <SelectItem value="cost-desc">Highest {view === "events" ? "income" : "cost"}</SelectItem>
+            <SelectItem value="cost-asc">Lowest {view === "events" ? "income" : "cost"}</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-3">
+        {view === "events" ? (
+          <>
+            {pastEvents.length === 0 && <p className="text-muted-foreground text-center py-8">No past events yet.</p>}
+            {pastEvents.map((ev) => (
+              <div
+                key={ev.id}
+                className="bg-card rounded-xl p-4 shadow-sm border border-border active:bg-muted transition-colors"
+                onContextMenu={(e) => handleLongPress(ev.id, e)}
+                onTouchStart={(e) => {
+                  const timer = setTimeout(() => handleLongPress(ev.id, e), 500);
+                  const clear = () => clearTimeout(timer);
+                  e.currentTarget.addEventListener("touchend", clear, { once: true });
+                  e.currentTarget.addEventListener("touchmove", clear, { once: true });
+                }}
+              >
+                <div className="flex justify-between items-center">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-base truncate">{ev.name}</h3>
+                    <div className="flex items-center gap-1 text-muted-foreground text-sm mt-1">
+                      <MapPin size={14} /><span className="truncate">{ev.location}</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-muted-foreground text-sm mt-0.5">
+                      <Calendar size={14} /><span>{format(new Date(ev.date), "dd MMM yyyy")}</span>
+                    </div>
+                  </div>
+                  {ev.income != null && (
+                    <div className="flex items-center gap-1 ml-2 shrink-0">
+                      <DollarSign size={16} className="text-income" />
+                      <span className="font-bold text-income text-lg">€{ev.income}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </>
+        ) : (
+          <>
+            {sortedExpenses.length === 0 && <p className="text-muted-foreground text-center py-8">No expenses yet.</p>}
+            {sortedExpenses.map((ex) => (
+              <div
+                key={ex.id}
+                className="bg-card rounded-xl p-4 shadow-sm border border-border active:bg-muted transition-colors"
+                onContextMenu={(e) => handleLongPress(ex.id, e)}
+                onTouchStart={(e) => {
+                  const timer = setTimeout(() => handleLongPress(ex.id, e), 500);
+                  const clear = () => clearTimeout(timer);
+                  e.currentTarget.addEventListener("touchend", clear, { once: true });
+                  e.currentTarget.addEventListener("touchmove", clear, { once: true });
+                }}
+              >
+                <div className="flex justify-between items-center">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-base truncate">{ex.title}</h3>
+                    <div className="flex items-center gap-1 text-muted-foreground text-sm mt-1">
+                      <Calendar size={14} /><span>{format(new Date(ex.date), "dd MMM yyyy")}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 ml-2 shrink-0">
+                    <span className="font-bold text-expense text-lg">-€{ex.cost.toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </>
+        )}
+      </div>
+
+      <EventContextMenu
+        open={contextMenu.open}
+        onClose={() => setContextMenu((c) => ({ ...c, open: false }))}
+        onEdit={handleEdit}
+        onDelete={() => {
+          if (view === "events") onDeleteEvent(contextMenu.id);
+          else onDeleteExpense(contextMenu.id);
+        }}
+        position={contextMenu.pos}
+      />
+    </div>
+  );
+};
+
+export default HistoryPage;
