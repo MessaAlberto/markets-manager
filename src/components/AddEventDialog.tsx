@@ -4,20 +4,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, MapPin } from "lucide-react";
+import { Loader2, MapPin, Link as LinkIcon } from "lucide-react";
 import { MarketEvent } from "@/lib/store";
 import { toast } from "sonner";
 
 interface Props {
   open: boolean;
   onClose: () => void;
-  onAdd: (data: { id?: string | number; name: string; location: string; date: string; participationCost: number; alreadyPaid: boolean; income?: number | null }) => void;
+  onAdd: (data: { id?: string | number; name: string; location: string; date: string; participationCost: number; alreadyPaid: boolean; income?: number | null; mapsLink?: string }) => void;
   editEvent?: MarketEvent | null;
 }
 
 const AddEventDialog = ({ open, onClose, onAdd, editEvent }: Props) => {
   const [name, setName] = useState("");
   const [location, setLocation] = useState("");
+  const [mapsLink, setMapsLink] = useState("");
   const [date, setDate] = useState("");
   const [cost, setCost] = useState("");
   const [paid, setPaid] = useState(false);
@@ -47,6 +48,7 @@ const AddEventDialog = ({ open, onClose, onAdd, editEvent }: Props) => {
   const resetForm = () => {
     setName("");
     setLocation("");
+    setMapsLink("");
     setDate("");
     setCost("");
     setPaid(false);
@@ -58,6 +60,7 @@ const AddEventDialog = ({ open, onClose, onAdd, editEvent }: Props) => {
     if (open && editEvent) {
       setName(editEvent.name === "(Nessun Evento)" ? "" : editEvent.name);
       setLocation(editEvent.location === "(Nessun Luogo)" ? "" : editEvent.location);
+      setMapsLink(editEvent.mapsLink || "");
       setDate(editEvent.date);
       setCost(editEvent.participationCost.toString());
       setPaid(editEvent.alreadyPaid);
@@ -85,14 +88,16 @@ const AddEventDialog = ({ open, onClose, onAdd, editEvent }: Props) => {
       const payload: any = {
         name: finalName,
         location: finalLocation,
+        mapsLink: mapsLink.trim(),
         date,
         participationCost: parseFloat(cost),
         alreadyPaid: paid,
       };
 
       if (isEdit) {
-        payload.id = editEvent.id;
+        payload.id = editEvent?.id;
         payload.income = income ? parseFloat(income) : null;
+        payload.reminder = editEvent?.reminder;
       }
 
       const response = await fetch("/api/events", {
@@ -136,7 +141,7 @@ const AddEventDialog = ({ open, onClose, onAdd, editEvent }: Props) => {
   return (
     <Dialog open={open} onOpenChange={(o) => !o && !saving && onClose()}>
       <DialogContent
-        className="max-w-[90vw] rounded-2xl"
+        className="max-w-[90vw] rounded-2xl max-h-[90vh] overflow-y-auto"
         onInteractOutside={(e) => saving && e.preventDefault()}
         onEscapeKeyDown={(e) => saving && e.preventDefault()}
       >
@@ -168,7 +173,6 @@ const AddEventDialog = ({ open, onClose, onAdd, editEvent }: Props) => {
               />
             </div>
 
-            {/* Show dropdown menu */}
             {showComuni && (
               <div className="absolute z-[100] w-full mt-1 bg-popover text-popover-foreground border border-border rounded-md shadow-md max-h-56 overflow-y-auto">
                 {filteredComuni.length > 0 ? (
@@ -176,6 +180,7 @@ const AddEventDialog = ({ open, onClose, onAdd, editEvent }: Props) => {
                     <div
                       key={c}
                       className="px-3 py-3 hover:bg-accent hover:text-accent-foreground cursor-pointer text-base transition-colors"
+                      onMouseDown={(e) => e.preventDefault()}
                       onClick={() => {
                         setLocation(c);
                         setShowComuni(false);
@@ -189,6 +194,14 @@ const AddEventDialog = ({ open, onClose, onAdd, editEvent }: Props) => {
                 )}
               </div>
             )}
+          </div>
+
+          <div>
+            <Label className="text-base font-semibold">Maps URL <span className="text-muted-foreground font-normal text-sm">(optional)</span></Label>
+            <div className="relative mt-1">
+              <LinkIcon className="absolute left-3 top-3.5 text-muted-foreground" size={18} />
+              <Input disabled={saving} className="pl-10 mt-1 text-base h-12" value={mapsLink} onChange={(e) => setMapsLink(e.target.value)} placeholder="Paste link to Google/Apple Maps" />
+            </div>
           </div>
 
           <div>

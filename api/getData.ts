@@ -28,7 +28,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }),
       sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
-        range: `${MARKET_SHEET_NAME}!A:J`,
+        range: `${MARKET_SHEET_NAME}!A:K`,
         valueRenderOption: 'FORMATTED_VALUE',
       })
     ]);
@@ -47,7 +47,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const reminderMsg = row[7];
       const reminderDate = parseSheetDate(row[8]);
       const reminderTime = row[9];
-      
+
       let reminder;
       if (reminderMsg && reminderDate && reminderTime) {
         reminder = { message: reminderMsg, date: reminderDate, time: reminderTime };
@@ -61,7 +61,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         participationCost: parseFloat(row[4]) || 0,
         alreadyPaid: row[5] === true || row[5] === 'TRUE' || row[5] === 'true',
         income: row[6] != null && row[6] !== '' ? parseFloat(row[6]) : null,
-        reminder: reminder
+        reminder: reminder,
+        mapsLink: row[10] || ''
       };
     });
 

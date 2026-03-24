@@ -17,14 +17,14 @@ const tabs = [
 const BottomNav = ({ active, onNavigate, onFabClick }: BottomNavProps) => {
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-nav border-t border-border z-50">
-      <div className="max-w-lg mx-auto grid grid-cols-5 items-end relative h-16">
+      <div className="max-w-lg mx-auto grid grid-cols-5 items-end relative h-20">
         {tabs.slice(0, 2).map((tab, i) => {
           const isActive = active === i;
           return (
             <button
               key={tab.label}
               onClick={() => onNavigate(i)}
-              className={`flex flex-col items-center justify-center gap-0.5 pt-2 pb-1 transition-colors ${
+              className={`flex flex-col items-center justify-center gap-0.5 pt-2 pb-5 transition-colors ${
                 isActive ? "text-nav-active" : "text-nav-inactive"
               }`}
             >
@@ -37,7 +37,7 @@ const BottomNav = ({ active, onNavigate, onFabClick }: BottomNavProps) => {
         <div className="flex items-center justify-center relative">
           <button
             onClick={onFabClick}
-            className="absolute -top-[75px] w-[70px] h-[70px] rounded-full bg-fab text-fab-foreground shadow-xl flex items-center justify-center active:scale-95 transition-transform border-4 border-background"
+            className="absolute -top-[88px] w-[70px] h-[70px] rounded-full bg-fab text-fab-foreground shadow-xl flex items-center justify-center active:scale-95 transition-transform border-4 border-background"
           >
             <Plus size={28} strokeWidth={3} />
           </button>
@@ -50,7 +50,7 @@ const BottomNav = ({ active, onNavigate, onFabClick }: BottomNavProps) => {
             <button
               key={tab.label}
               onClick={() => onNavigate(idx)}
-              className={`flex flex-col items-center justify-center gap-0.5 pt-2 pb-1 transition-colors ${
+              className={`flex flex-col items-center justify-center gap-0.5 pt-2 pb-5 transition-colors ${
                 isActive ? "text-nav-active" : "text-nav-inactive"
               }`}
             >

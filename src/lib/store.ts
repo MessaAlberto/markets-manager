@@ -16,6 +16,7 @@ export interface MarketEvent {
   alreadyPaid: boolean;
   income?: number | null;
   reminder?: Reminder;
+  mapsLink?: string;
 }
 
 export interface Expense {

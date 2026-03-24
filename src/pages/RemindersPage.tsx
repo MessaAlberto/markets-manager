@@ -1,14 +1,15 @@
 import { useState } from "react";
-import { MapPin, Calendar, Bell, CreditCard, DollarSign, Navigation } from "lucide-react";
+import { MapPin, Calendar, Bell, CreditCard, DollarSign, Navigation, Loader2 } from "lucide-react";
 import { MarketEvent, Reminder } from "@/lib/store";
 import EventContextMenu from "@/components/EventContextMenu";
 import AddIncomeDialog from "@/components/AddIncomeDialog";
-import { format, isPast, isToday, isFuture } from "date-fns";
+import { format, isPast, isToday } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { toast } from "sonner";
 
 interface Props {
   events: MarketEvent[];
@@ -22,19 +23,17 @@ const RemindersPage = ({ events, onUpdateEvent, onDeleteEvent, onEditEvent }: Pr
   const [incomeDialog, setIncomeDialog] = useState<{ open: boolean; id: string; name: string }>({ open: false, id: "", name: "" });
   const [reminderDialog, setReminderDialog] = useState<{ open: boolean; id: string }>({ open: false, id: "" });
   const [reminderForm, setReminderForm] = useState<Reminder>({ message: "", date: "", time: "" });
+  const [saving, setSaving] = useState(false);
 
-  // Filter: only show events missing some info (past without income, or upcoming with missing payment/no reminder)
   const filtered = events.filter((ev) => {
     const eventDate = new Date(ev.date);
     const past = isPast(eventDate) && !isToday(eventDate);
     if (past) {
-      return !ev.income; // past events only if missing income
+      return !ev.income;
     }
-    // upcoming: show if missing payment or no reminder set
     return true;
   });
 
-  // Sort by most recent first
   const sorted = [...filtered].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const handleLongPress = (id: string, e: React.TouchEvent | React.MouseEvent) => {
@@ -44,11 +43,89 @@ const RemindersPage = ({ events, onUpdateEvent, onDeleteEvent, onEditEvent }: Pr
     setContextMenu({ open: true, id, pos: { x: clientX, y: clientY } });
   };
 
-  const handleSaveReminder = () => {
-    if (!reminderForm.message || !reminderForm.date || !reminderForm.time) return;
-    onUpdateEvent(reminderDialog.id, { reminder: { ...reminderForm } });
-    setReminderDialog({ open: false, id: "" });
-    setReminderForm({ message: "", date: "", time: "" });
+  const downloadICS = (event: MarketEvent, reminder: Reminder) => {
+    const dateStr = reminder.date.replace(/-/g, "");
+    const timeStr = reminder.time.replace(/:/g, "") + "00";
+    const startDateTime = `${dateStr}T${timeStr}`;
+
+    const icsContent = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "BEGIN:VEVENT",
+      `UID:market-reminder-${event.id}@marketsmanager`,
+      `DTSTART:${startDateTime}`,
+      `SUMMARY:${reminder.message} - ${event.name}`,
+      `LOCATION:${event.location}`,
+      "END:VEVENT",
+      "END:VCALENDAR"
+    ].join("\n");
+
+    const blob = new Blob([icsContent], { type: "text/calendar;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `${event.name.replace(/\s+/g, "_")}_reminder.ics`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleSaveReminder = async () => {
+    if (!reminderForm.message || !reminderForm.date || !reminderForm.time) {
+      toast.error("Please fill in all reminder fields", { duration: 2500 });
+      return;
+    }
+
+    const currentEvent = events.find(e => e.id === reminderDialog.id);
+    if (!currentEvent) return;
+
+    setSaving(true);
+
+    try {
+      const payload = {
+        id: currentEvent.id,
+        name: currentEvent.name,
+        location: currentEvent.location,
+        date: currentEvent.date,
+        participationCost: currentEvent.participationCost,
+        alreadyPaid: currentEvent.alreadyPaid,
+        income: currentEvent.income,
+        mapsLink: currentEvent.mapsLink,
+        reminder: reminderForm
+      };
+
+      const response = await fetch("/api/events", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-pin": localStorage.getItem("mercatini-pin") || ""
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.status === 401) {
+        toast.error("Wrong or changed PIN. Please log in again.");
+        setReminderDialog({ open: false, id: "" });
+        return;
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success("Reminder saved successfully!", { duration: 2500 });
+        downloadICS(currentEvent, reminderForm);
+        onUpdateEvent(reminderDialog.id, { reminder: { ...reminderForm } });
+        setReminderDialog({ open: false, id: "" });
+        setReminderForm({ message: "", date: "", time: "" });
+      } else {
+        toast.error(data.message || "Failed to save reminder", { duration: 2500 });
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Server error", { duration: 2500 });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const contextEvent = events.find((e) => e.id === contextMenu.id);
@@ -103,7 +180,16 @@ const RemindersPage = ({ events, onUpdateEvent, onDeleteEvent, onEditEvent }: Pr
                       <>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <button className="p-2 rounded-lg bg-muted active:scale-95 transition-transform">
+                            <button
+                              onClick={() => {
+                                if (ev.mapsLink) {
+                                  window.open(ev.mapsLink, '_blank');
+                                } else {
+                                  window.open(`https://maps.google.com/?q=${encodeURIComponent(ev.location)}`, '_blank');
+                                }
+                              }}
+                              className="p-2 rounded-lg bg-muted active:scale-95 transition-transform"
+                            >
                               <Navigation size={18} className="text-muted-foreground" />
                             </button>
                           </TooltipTrigger>
@@ -153,7 +239,7 @@ const RemindersPage = ({ events, onUpdateEvent, onDeleteEvent, onEditEvent }: Pr
           open={contextMenu.open}
           onClose={() => setContextMenu((c) => ({ ...c, open: false }))}
           onEdit={() => contextEvent && onEditEvent(contextEvent)}
-          onDelete={() => {return onDeleteEvent(contextMenu.id)}}
+          onDelete={() => { return onDeleteEvent(contextMenu.id) }}
           position={contextMenu.pos}
         />
 
@@ -165,26 +251,32 @@ const RemindersPage = ({ events, onUpdateEvent, onDeleteEvent, onEditEvent }: Pr
           onAdd={(income) => onUpdateEvent(incomeDialog.id, { income })}
         />
 
-        {/* Reminder Dialog */}
-        <Dialog open={reminderDialog.open} onOpenChange={(o) => !o && setReminderDialog({ open: false, id: "" })}>
-          <DialogContent className="max-w-[90vw] rounded-2xl">
+        <Dialog open={reminderDialog.open} onOpenChange={(o) => !o && !saving && setReminderDialog({ open: false, id: "" })}>
+          <DialogContent
+            className="max-w-[90vw] rounded-2xl"
+            onInteractOutside={(e) => saving && e.preventDefault()}
+            onEscapeKeyDown={(e) => saving && e.preventDefault()}
+          >
             <DialogHeader>
               <DialogTitle className="text-xl">Set Reminder</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 mt-2">
               <div>
                 <Label className="text-base font-semibold">Message</Label>
-                <Input className="mt-1 text-base h-12" value={reminderForm.message} onChange={(e) => setReminderForm((f) => ({ ...f, message: e.target.value }))} placeholder="e.g. Prepare stock" />
+                <Input disabled={saving} className="mt-1 text-base h-12" value={reminderForm.message} onChange={(e) => setReminderForm((f) => ({ ...f, message: e.target.value }))} placeholder="e.g. Prepare stock" />
               </div>
               <div>
                 <Label className="text-base font-semibold">Date</Label>
-                <Input className="mt-1 text-base h-12" type="date" value={reminderForm.date} onChange={(e) => setReminderForm((f) => ({ ...f, date: e.target.value }))} />
+                <Input disabled={saving} className="mt-1 text-base h-12" type="date" value={reminderForm.date} onChange={(e) => setReminderForm((f) => ({ ...f, date: e.target.value }))} />
               </div>
               <div>
                 <Label className="text-base font-semibold">Time</Label>
-                <Input className="mt-1 text-base h-12" type="time" value={reminderForm.time} onChange={(e) => setReminderForm((f) => ({ ...f, time: e.target.value }))} />
+                <Input disabled={saving} className="mt-1 text-base h-12" type="time" value={reminderForm.time} onChange={(e) => setReminderForm((f) => ({ ...f, time: e.target.value }))} />
               </div>
-              <Button onClick={handleSaveReminder} className="w-full h-12 text-base font-bold">Save Reminder</Button>
+              <Button onClick={handleSaveReminder} disabled={saving} className="w-full h-12 text-base font-bold">
+                {saving && <Loader2 className="animate-spin mr-2" size={18} />}
+                {saving ? "Saving..." : "Save Reminder"}
+              </Button>
             </div>
           </DialogContent>
         </Dialog>

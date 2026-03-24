@@ -27,20 +27,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 }
 
 async function handlePost(req: VercelRequest, res: VercelResponse) {
-  const { name, location, date, participationCost, alreadyPaid } = req.body;
+  const { name, location, date, participationCost, alreadyPaid, mapsLink } = req.body;
 
   if (!name || !location || !date || participationCost === undefined) {
     return res.status(400).json({ success: false, message: 'Missing required fields' });
   }
 
   const newId = Date.now();
+  const mLink = mapsLink || "";
 
   await sheets.spreadsheets.values.append({
     spreadsheetId: SPREADSHEET_ID,
-    range: `${MARKET_SHEET_NAME}!A:F`,
+    range: `${MARKET_SHEET_NAME}!A:K`,
     valueInputOption: 'USER_ENTERED',
     requestBody: {
-      values: [[newId, name, location, date, participationCost, alreadyPaid]],
+      values: [[newId, name, location, date, participationCost, alreadyPaid, "", "", "", "", mLink]],
     },
   });
 
@@ -48,7 +49,7 @@ async function handlePost(req: VercelRequest, res: VercelResponse) {
 }
 
 async function handlePut(req: VercelRequest, res: VercelResponse) {
-  const { id, name, location, date, participationCost, alreadyPaid, income } = req.body;
+  const { id, name, location, date, participationCost, alreadyPaid, income, reminder, mapsLink } = req.body;
 
   if (!id || !name || !location || !date || participationCost === undefined) {
     return res.status(400).json({ success: false, message: 'Missing required fields' });
@@ -58,13 +59,17 @@ async function handlePut(req: VercelRequest, res: VercelResponse) {
   if (rowToUpdate === -1) throw new Error("Event not found");
 
   const incomeValue = income != null ? income : "";
+  const remMsg = reminder?.message || "";
+  const remDate = reminder?.date || "";
+  const remTime = reminder?.time || "";
+  const mLink = mapsLink || "";
 
   await sheets.spreadsheets.values.update({
     spreadsheetId: SPREADSHEET_ID,
-    range: `${MARKET_SHEET_NAME}!A${rowToUpdate}:G${rowToUpdate}`,
+    range: `${MARKET_SHEET_NAME}!A${rowToUpdate}:K${rowToUpdate}`,
     valueInputOption: 'USER_ENTERED',
     requestBody: {
-      values: [[id, name, location, date, participationCost, alreadyPaid, incomeValue]],
+      values: [[id, name, location, date, participationCost, alreadyPaid, incomeValue, remMsg, remDate, remTime, mLink]],
     },
   });
 
