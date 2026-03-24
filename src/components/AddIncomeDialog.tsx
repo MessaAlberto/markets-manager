@@ -9,11 +9,12 @@ import { toast } from "sonner";
 interface Props {
   open: boolean;
   onClose: () => void;
+  eventId: string | number; // Update parent component to pass this
   eventName: string;
   onAdd: (income: number) => void;
 }
 
-const AddIncomeDialog = ({ open, onClose, eventName, onAdd }: Props) => {
+const AddIncomeDialog = ({ open, onClose, eventId, eventName, onAdd }: Props) => {
   const [income, setIncome] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -23,15 +24,34 @@ const AddIncomeDialog = ({ open, onClose, eventName, onAdd }: Props) => {
         toast.error("Please enter an income amount", { duration: 2500 });
         return;
       }
+      
       setSaving(true);
-      await new Promise(r => setTimeout(r, 400));
-      onAdd(parseFloat(income));
-      setIncome("");
-      toast.success("Income added!", { duration: 2500 });
-      onClose();
-    } catch {
-      toast.error("Failed to add income", { duration: 2500 });
-      onClose();
+      const parsedIncome = parseFloat(income);
+
+      const response = await fetch("/api/income", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: eventId,
+          income: parsedIncome,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        onAdd(parsedIncome);
+        setIncome("");
+        toast.success("Income added successfully!", { duration: 2500 });
+        onClose();
+      } else {
+        toast.error(data.message || "Failed to add income", { duration: 2500 });
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Server error", { duration: 2500 });
     } finally {
       setSaving(false);
     }

@@ -160,6 +160,7 @@ const RemindersPage = ({ events, onUpdateEvent, onDeleteEvent, onEditEvent }: Pr
         <AddIncomeDialog
           open={incomeDialog.open}
           onClose={() => setIncomeDialog((d) => ({ ...d, open: false }))}
+          eventId={incomeDialog.id}
           eventName={incomeDialog.name}
           onAdd={(income) => onUpdateEvent(incomeDialog.id, { income })}
         />

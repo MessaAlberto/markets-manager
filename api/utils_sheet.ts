@@ -43,7 +43,7 @@ async function findRowById(sheets: any, sheetName: string, id: string | number) 
 export const appendExpense = async (title: string, date: string, cost: number) => {
   const sheets = getClient();
   const newId = Date.now();
-  
+
   await sheets.spreadsheets.values.append({
     spreadsheetId: SPREADSHEET_ID,
     range: `${EXP_SHEET_NAME}!A:D`,
@@ -75,7 +75,7 @@ export const updateExpense = async (id: number | string, title: string, date: st
 export const appendEvent = async (name: string, location: string, date: string, participationCost: number, alreadyPaid: boolean) => {
   const sheets = getClient();
   const newId = Date.now();
-  
+
   await sheets.spreadsheets.values.append({
     spreadsheetId: SPREADSHEET_ID,
     range: `${MARKET_SHEET_NAME}!A:F`,
@@ -88,7 +88,24 @@ export const appendEvent = async (name: string, location: string, date: string, 
   return newId;
 };
 
-export const updateEvent = async (id: number | string, name: string, location: string, date: string, participationCost: number, alreadyPaid: boolean) => {
+export const updateEvent = async (id: number | string, name: string, location: string, date: string, participationCost: number, alreadyPaid: boolean, income?: number | null) => {
+  const sheets = getClient();
+  const rowToUpdate = await findRowById(sheets, MARKET_SHEET_NAME, id);
+
+  if (rowToUpdate === -1) throw new Error("Event not found");
+
+  const incomeValue = income != null ? income : "";
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `${MARKET_SHEET_NAME}!A${rowToUpdate}:G${rowToUpdate}`,
+    valueInputOption: 'USER_ENTERED',
+    requestBody: {
+      values: [[id, name, location, date, participationCost, alreadyPaid, incomeValue]],
+    },
+  });
+};
+
+export const updateEventIncome = async (id: number | string, income: number) => {
   const sheets = getClient();
   const rowToUpdate = await findRowById(sheets, MARKET_SHEET_NAME, id);
 
@@ -96,10 +113,10 @@ export const updateEvent = async (id: number | string, name: string, location: s
 
   await sheets.spreadsheets.values.update({
     spreadsheetId: SPREADSHEET_ID,
-    range: `${MARKET_SHEET_NAME}!A${rowToUpdate}:F${rowToUpdate}`,
+    range: `${MARKET_SHEET_NAME}!G${rowToUpdate}`,
     valueInputOption: 'USER_ENTERED',
     requestBody: {
-      values: [[id, name, location, date, participationCost, alreadyPaid]],
+      values: [[income]],
     },
   });
 };

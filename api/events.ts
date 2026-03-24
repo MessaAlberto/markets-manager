@@ -32,12 +32,12 @@ async function handlePost(req: VercelRequest, res: VercelResponse) {
 }
 
 async function handlePut(req: VercelRequest, res: VercelResponse) {
-  const { id, name, location, date, participationCost, alreadyPaid } = req.body;
+  const { id, name, location, date, participationCost, alreadyPaid, income } = req.body;
 
   if (!id || !name || !location || !date || participationCost === undefined) {
     return res.status(400).json({ success: false, message: 'Missing required fields' });
   }
 
-  await updateEvent(id, name, location, date, participationCost, alreadyPaid);
+  await updateEvent(id, name, location, date, participationCost, alreadyPaid, income);
   return res.status(200).json({ success: true });
 }

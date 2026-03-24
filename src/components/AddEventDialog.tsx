@@ -11,7 +11,7 @@ import { toast } from "sonner";
 interface Props {
   open: boolean;
   onClose: () => void;
-  onAdd: (data: { id?: string | number; name: string; location: string; date: string; participationCost: number; alreadyPaid: boolean }) => void;
+  onAdd: (data: { id?: string | number; name: string; location: string; date: string; participationCost: number; alreadyPaid: boolean; income?: number | null }) => void;
   editEvent?: MarketEvent | null;
 }
 
@@ -21,6 +21,7 @@ const AddEventDialog = ({ open, onClose, onAdd, editEvent }: Props) => {
   const [date, setDate] = useState("");
   const [cost, setCost] = useState("");
   const [paid, setPaid] = useState(false);
+  const [income, setIncome] = useState("");
   const [saving, setSaving] = useState(false);
 
   const resetForm = () => {
@@ -29,6 +30,7 @@ const AddEventDialog = ({ open, onClose, onAdd, editEvent }: Props) => {
     setDate("");
     setCost("");
     setPaid(false);
+    setIncome("");
   };
 
   useEffect(() => {
@@ -38,6 +40,7 @@ const AddEventDialog = ({ open, onClose, onAdd, editEvent }: Props) => {
       setDate(editEvent.date);
       setCost(editEvent.participationCost.toString());
       setPaid(editEvent.alreadyPaid);
+      setIncome(editEvent.income != null ? editEvent.income.toString() : "");
     } else if (open && !editEvent) {
       resetForm();
     }
@@ -49,18 +52,24 @@ const AddEventDialog = ({ open, onClose, onAdd, editEvent }: Props) => {
         toast.error("Please fill in all required fields", { duration: 2500 });
         return;
       }
-      
+
       setSaving(true);
-      
-      const method = editEvent ? "PUT" : "POST";
-      const payload = {
-        ...(editEvent && { id: editEvent.id }),
+
+      const isEdit = !!editEvent;
+      const method = isEdit ? "PUT" : "POST";
+
+      const payload: any = {
         name,
         location,
         date,
         participationCost: parseFloat(cost),
         alreadyPaid: paid,
       };
+
+      if (isEdit) {
+        payload.id = editEvent.id;
+        payload.income = income ? parseFloat(income) : null;
+      }
 
       const response = await fetch("/api/events", {
         method,
@@ -73,11 +82,11 @@ const AddEventDialog = ({ open, onClose, onAdd, editEvent }: Props) => {
       const data = await response.json();
 
       if (data.success) {
-        toast.success(editEvent ? "Event updated successfully!" : "Event added successfully!", { duration: 2500 });
+        toast.success(isEdit ? "Event updated successfully!" : "Event added successfully!", { duration: 2500 });
 
-        const finalPayload = editEvent ? payload : { ...payload, id: data.id };
+        const finalPayload = isEdit ? payload : { ...payload, id: data.id };
         onAdd(finalPayload);
-        
+
         resetForm();
         onClose();
       } else {
@@ -116,11 +125,27 @@ const AddEventDialog = ({ open, onClose, onAdd, editEvent }: Props) => {
             <Label className="text-base font-semibold">Participation Cost (€)</Label>
             <Input className="mt-1 text-base h-12" type="number" step="0.01" value={cost} onChange={(e) => setCost(e.target.value)} placeholder="0.00" />
           </div>
-          <div className="flex items-center gap-3">
+
+          {isEdit && (
+            <div>
+              <Label className="text-base font-semibold text-primary">Income (€)</Label>
+              <Input
+                className="mt-1 text-base h-12 border-primary/50 bg-primary/5"
+                type="number"
+                step="0.01"
+                value={income}
+                onChange={(e) => setIncome(e.target.value)}
+                placeholder="0.00 (leave empty to remove)"
+              />
+            </div>
+          )}
+
+          <div className="flex items-center gap-3 pt-1">
             <Checkbox id="paid" checked={paid} onCheckedChange={(v) => setPaid(!!v)} className="w-6 h-6" />
-            <Label htmlFor="paid" className="text-base font-semibold cursor-pointer">Already Paid</Label>
+            <Label htmlFor="paid" className="text-base font-semibold cursor-pointer">Already Paid Participation Cost</Label>
           </div>
-          <Button onClick={handleSubmit} disabled={saving} className="w-full h-12 text-base font-bold">
+
+          <Button onClick={handleSubmit} disabled={saving} className="w-full h-12 text-base font-bold mt-2">
             {saving && <Loader2 className="animate-spin mr-2" size={18} />}
             {saving ? (isEdit ? "Saving Changes…" : "Saving Event…") : (isEdit ? "Save Changes" : "Save Event")}
           </Button>
