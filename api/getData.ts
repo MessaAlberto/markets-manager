@@ -1,6 +1,5 @@
-// api/getData.ts
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { sheets, SPREADSHEET_ID, EXP_SHEET_NAME, MARKET_SHEET_NAME, checkAuth } from './googleClient';
+import { sheets, SPREADSHEET_ID, EXP_SHEET_NAME, MARKET_SHEET_NAME, checkAuth } from './googleClient.js';
 
 function parseSheetDate(value: any): string {
   if (!value) return '';

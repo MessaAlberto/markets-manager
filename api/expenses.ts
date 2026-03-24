@@ -1,6 +1,5 @@
-// api/expenses.ts
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { sheets, SPREADSHEET_ID, EXP_SHEET_NAME, findRowById, deleteRowById, checkAuth } from './googleClient';
+import { sheets, SPREADSHEET_ID, EXP_SHEET_NAME, findRowById, deleteRowById, checkAuth } from './googleClient.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const method = req.method;

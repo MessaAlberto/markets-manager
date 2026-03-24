@@ -1,6 +1,5 @@
-// api/income.ts
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { sheets, SPREADSHEET_ID, MARKET_SHEET_NAME, findRowById, checkAuth } from './googleClient';
+import { sheets, SPREADSHEET_ID, MARKET_SHEET_NAME, findRowById, checkAuth } from './googleClient.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!checkAuth(req)) {
