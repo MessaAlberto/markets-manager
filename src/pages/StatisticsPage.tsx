@@ -27,6 +27,10 @@ const CHART_COLOR = "hsl(210, 60%, 45%)";
 const INCOME_COLOR = "hsl(145, 50%, 42%)";
 const EXPENSE_COLOR = "hsl(15, 75%, 55%)";
 
+// Definiamo delle costanti per i valori vuoti
+const EMPTY_LOCATION = "(Nessun Luogo)";
+const EMPTY_EVENT = "(Nessun Evento)";
+
 function filterByTime<T extends { date: string }>(items: T[], tf: TimeFilter, specific: string): T[] {
   const now = new Date();
   return items.filter(item => {
@@ -43,7 +47,6 @@ function filterByTime<T extends { date: string }>(items: T[], tf: TimeFilter, sp
   });
 }
 
-// Sort chronologically by parsing the name key
 function sortChronologically(data: { name: string; [k: string]: any }[], keyFormat: string) {
   return [...data].sort((a, b) => {
     try {
@@ -86,8 +89,15 @@ const StatisticsPage = ({ events, expenses }: Props) => {
 
   const pastEvents = events.filter(e => new Date(e.date) <= new Date());
 
-  const locations = useMemo(() => [...new Set(pastEvents.map(e => e.location))].sort(), [pastEvents]);
-  const eventNames = useMemo(() => [...new Set(pastEvents.map(e => e.name))].sort(), [pastEvents]);
+  // Raggruppa le location, trasformando quelle vuote in "(Nessun Luogo)"
+  const locations = useMemo(() => 
+    [...new Set(pastEvents.map(e => (e.location && e.location.trim() !== "") ? e.location : EMPTY_LOCATION))].sort(), 
+  [pastEvents]);
+  
+  // Raggruppa gli eventi, trasformando quelli vuoti in "(Nessun Evento)"
+  const eventNames = useMemo(() => 
+    [...new Set(pastEvents.map(e => (e.name && e.name.trim() !== "") ? e.name : EMPTY_EVENT))].sort(), 
+  [pastEvents]);
 
   const periods = useMemo(() => {
     const dates = mode === "markets" ? pastEvents.map(e => e.date) : expenses.map(e => e.date);
@@ -106,14 +116,29 @@ const StatisticsPage = ({ events, expenses }: Props) => {
     }));
   }, [periods, timeFilter]);
 
-  // Auto-select first period when picker appears
   const effectivePeriod = specificPeriod || (periods.length > 0 ? periods[0] : "");
 
-  // Filtered data
   const filteredEvents = useMemo(() => {
     let data = filterByTime(pastEvents, timeFilter, effectivePeriod);
-    if (locationFilter) data = data.filter(e => e.location === locationFilter);
-    if (eventFilter) data = data.filter(e => e.name === eventFilter);
+    
+    // Logica di filtraggio Location aggiornata
+    if (locationFilter) {
+      if (locationFilter === EMPTY_LOCATION) {
+        data = data.filter(e => !e.location || e.location.trim() === "");
+      } else {
+        data = data.filter(e => e.location === locationFilter);
+      }
+    }
+    
+    // Logica di filtraggio Evento aggiornata
+    if (eventFilter) {
+      if (eventFilter === EMPTY_EVENT) {
+        data = data.filter(e => !e.name || e.name.trim() === "");
+      } else {
+        data = data.filter(e => e.name === eventFilter);
+      }
+    }
+    
     return data;
   }, [pastEvents, timeFilter, effectivePeriod, locationFilter, eventFilter]);
 
@@ -122,11 +147,15 @@ const StatisticsPage = ({ events, expenses }: Props) => {
     [expenses, timeFilter, effectivePeriod]
   );
 
-  // Chart data builders
   const buildGrouped = (key: "location" | "name") => {
     const map = new Map<string, { count: number; totalIncome: number }>();
     filteredEvents.forEach(e => {
-      const k = e[key];
+      // Sostituisce la stringa vuota con il nome ufficiale per il grafico
+      let k = e[key];
+      if (!k || k.trim() === "") {
+        k = key === "location" ? EMPTY_LOCATION : EMPTY_EVENT;
+      }
+      
       const d = map.get(k) || { count: 0, totalIncome: 0 };
       d.count++;
       d.totalIncome += e.income || 0;
@@ -140,7 +169,6 @@ const StatisticsPage = ({ events, expenses }: Props) => {
     }));
   };
 
-  // Determine time granularity for market charts
   const useYearOnly = timeFilter === "5y" || timeFilter === "all";
 
   const marketTimeDataByMonth = useMemo(() => {
@@ -192,7 +220,6 @@ const StatisticsPage = ({ events, expenses }: Props) => {
 
   const renderMarketTimeCharts = () => {
     if (timeFilter === "all") {
-      // Show both year and month aggregations
       return (
         <>
           <h2 className="font-bold text-base mb-3 text-muted-foreground">By Year</h2>

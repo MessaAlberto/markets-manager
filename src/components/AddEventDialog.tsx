@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2 } from "lucide-react";
+import { Loader2, MapPin } from "lucide-react";
 import { MarketEvent } from "@/lib/store";
 import { toast } from "sonner";
 
@@ -24,6 +24,26 @@ const AddEventDialog = ({ open, onClose, onAdd, editEvent }: Props) => {
   const [income, setIncome] = useState("");
   const [saving, setSaving] = useState(false);
 
+  const [comuni, setComuni] = useState<string[]>([]);
+  const [showComuni, setShowComuni] = useState(false);
+
+  useEffect(() => {
+    fetch("https://raw.githubusercontent.com/matteocontrini/comuni-json/master/comuni.json")
+      .then(res => res.json())
+      .then(data => {
+        const nomi = data.map((c: any) => c.nome).sort();
+        setComuni(nomi);
+      })
+      .catch(err => console.error("Errore nel caricamento dei comuni", err));
+  }, []);
+
+  const filteredComuni = useMemo(() => {
+    if (!location) return comuni.slice(0, 50);
+    return comuni
+      .filter(c => c.toLowerCase().includes(location.toLowerCase()))
+      .slice(0, 50);
+  }, [comuni, location]);
+
   const resetForm = () => {
     setName("");
     setLocation("");
@@ -31,12 +51,15 @@ const AddEventDialog = ({ open, onClose, onAdd, editEvent }: Props) => {
     setCost("");
     setPaid(false);
     setIncome("");
+    setShowComuni(false);
   };
 
   useEffect(() => {
     if (open && editEvent) {
-      setName(editEvent.name);
-      setLocation(editEvent.location);
+      // Se modifichi un evento che era stato salvato come "(Nessun Evento)", 
+      // mostriamo il campo vuoto per pulizia visiva, altrimenti mostriamo il nome.
+      setName(editEvent.name === "(Nessun Evento)" ? "" : editEvent.name);
+      setLocation(editEvent.location === "(Nessun Luogo)" ? "" : editEvent.location);
       setDate(editEvent.date);
       setCost(editEvent.participationCost.toString());
       setPaid(editEvent.alreadyPaid);
@@ -48,8 +71,9 @@ const AddEventDialog = ({ open, onClose, onAdd, editEvent }: Props) => {
 
   const handleSubmit = async () => {
     try {
-      if (!name || !location || !date || !cost) {
-        toast.error("Please fill in all required fields", { duration: 2500 });
+      // Ora nome e location non sono più obbligatori per passare il check!
+      if (!date || !cost) {
+        toast.error("Please fill in Date and Cost", { duration: 2500 });
         return;
       }
 
@@ -58,9 +82,13 @@ const AddEventDialog = ({ open, onClose, onAdd, editEvent }: Props) => {
       const isEdit = !!editEvent;
       const method = isEdit ? "PUT" : "POST";
 
+      // Applichiamo i valori di default se i campi sono vuoti o contengono solo spazi
+      const finalName = name.trim() !== "" ? name.trim() : "(Nessun Evento)";
+      const finalLocation = location.trim() !== "" ? location.trim() : "(Nessun Luogo)";
+
       const payload: any = {
-        name,
-        location,
+        name: finalName,
+        location: finalLocation,
         date,
         participationCost: parseFloat(cost),
         alreadyPaid: paid,
@@ -114,13 +142,52 @@ const AddEventDialog = ({ open, onClose, onAdd, editEvent }: Props) => {
         </DialogHeader>
         <div className="space-y-4 mt-2">
           <div>
-            <Label className="text-base font-semibold">Event Name</Label>
-            <Input disabled={saving} className="mt-1 text-base h-12" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Sunday Bazaar" />
+            <Label className="text-base font-semibold">Event Name <span className="text-muted-foreground font-normal text-sm">(optional)</span></Label>
+            <Input disabled={saving} className="mt-1 text-base h-12" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Fiori e Colori" />
           </div>
-          <div>
-            <Label className="text-base font-semibold">Location</Label>
-            <Input disabled={saving} className="mt-1 text-base h-12" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. City Center" />
+
+          <div className="relative">
+            <Label className="text-base font-semibold">Location (Comune) <span className="text-muted-foreground font-normal text-sm">(optional)</span></Label>
+            <div className="relative mt-1">
+              <MapPin className="absolute left-3 top-3.5 text-muted-foreground" size={18} />
+              <Input
+                disabled={saving}
+                className="pl-10 text-base h-12"
+                value={location}
+                onChange={(e) => {
+                  setLocation(e.target.value);
+                  setShowComuni(true);
+                }}
+                onFocus={() => setShowComuni(true)}
+                onBlur={() => setTimeout(() => setShowComuni(false), 200)}
+                placeholder="Cerca un comune..."
+                autoComplete="off"
+              />
+            </div>
+
+            {/* Show dropdown menu */}
+            {showComuni && (
+              <div className="absolute z-[100] w-full mt-1 bg-popover text-popover-foreground border border-border rounded-md shadow-md max-h-56 overflow-y-auto">
+                {filteredComuni.length > 0 ? (
+                  filteredComuni.map(c => (
+                    <div
+                      key={c}
+                      className="px-3 py-3 hover:bg-accent hover:text-accent-foreground cursor-pointer text-base transition-colors"
+                      onClick={() => {
+                        setLocation(c);
+                        setShowComuni(false);
+                      }}
+                    >
+                      {c}
+                    </div>
+                  ))
+                ) : (
+                  <div className="px-3 py-4 text-sm text-center text-muted-foreground">Nessun comune trovato</div>
+                )}
+              </div>
+            )}
           </div>
+
           <div>
             <Label className="text-base font-semibold">Date</Label>
             <Input disabled={saving} className="mt-1 text-base h-12" type="date" value={date} onChange={(e) => setDate(e.target.value)} />

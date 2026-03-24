@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { MapPin, Calendar, DollarSign } from "lucide-react";
 import { MarketEvent, Expense } from "@/lib/store";
 import EventContextMenu from "@/components/EventContextMenu";
@@ -22,25 +22,33 @@ const HistoryPage = ({ events, expenses, onDeleteEvent, onDeleteExpense, onEditE
   const [sort, setSort] = useState<SortType>("date-desc");
   const [contextMenu, setContextMenu] = useState<{ open: boolean; id: string; pos: { x: number; y: number } }>({ open: false, id: "", pos: { x: 0, y: 0 } });
 
-  const pastEvents = events
-    .filter((e) => isPast(new Date(e.date)))
-    .sort((a, b) => {
-      switch (sort) {
-        case "date-desc": return new Date(b.date).getTime() - new Date(a.date).getTime();
-        case "date-asc": return new Date(a.date).getTime() - new Date(b.date).getTime();
-        case "cost-desc": return (b.income || 0) - (a.income || 0);
-        case "cost-asc": return (a.income || 0) - (b.income || 0);
-      }
-    });
+  const pastEvents = useMemo(() => {
+    return events
+      .filter((e) => e.id && e.id.trim() !== "" && isPast(new Date(e.date)))
+      .sort((a, b) => {
+        switch (sort) {
+          case "date-desc": return new Date(b.date).getTime() - new Date(a.date).getTime();
+          case "date-asc": return new Date(a.date).getTime() - new Date(b.date).getTime();
+          case "cost-desc": return (b.income || 0) - (a.income || 0);
+          case "cost-asc": return (a.income || 0) - (b.income || 0);
+          default: return 0;
+        }
+      });
+  }, [events, sort]);
 
-  const sortedExpenses = [...expenses].sort((a, b) => {
-    switch (sort) {
-      case "date-desc": return new Date(b.date).getTime() - new Date(a.date).getTime();
-      case "date-asc": return new Date(a.date).getTime() - new Date(b.date).getTime();
-      case "cost-desc": return b.cost - a.cost;
-      case "cost-asc": return a.cost - b.cost;
-    }
-  });
+  const sortedExpenses = useMemo(() => {
+    return expenses
+      .filter((e) => e.id && e.id.trim() !== "")
+      .sort((a, b) => {
+        switch (sort) {
+          case "date-desc": return new Date(b.date).getTime() - new Date(a.date).getTime();
+          case "date-asc": return new Date(a.date).getTime() - new Date(b.date).getTime();
+          case "cost-desc": return b.cost - a.cost;
+          case "cost-asc": return a.cost - b.cost;
+          default: return 0;
+        }
+      });
+  }, [expenses, sort]);
 
   const handleLongPress = (id: string, e: React.TouchEvent | React.MouseEvent) => {
     e.preventDefault();
@@ -66,17 +74,15 @@ const HistoryPage = ({ events, expenses, onDeleteEvent, onDeleteExpense, onEditE
       <div className="flex gap-2 mb-3">
         <button
           onClick={() => setView("events")}
-          className={`flex-1 py-2.5 rounded-full text-sm font-bold transition-colors ${
-            view === "events" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-          }`}
+          className={`flex-1 py-2.5 rounded-full text-sm font-bold transition-colors ${view === "events" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+            }`}
         >
           Market Events
         </button>
         <button
           onClick={() => setView("expenses")}
-          className={`flex-1 py-2.5 rounded-full text-sm font-bold transition-colors ${
-            view === "expenses" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-          }`}
+          className={`flex-1 py-2.5 rounded-full text-sm font-bold transition-colors ${view === "expenses" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+            }`}
         >
           Expenses
         </button>
@@ -101,9 +107,9 @@ const HistoryPage = ({ events, expenses, onDeleteEvent, onDeleteExpense, onEditE
         {view === "events" ? (
           <>
             {pastEvents.length === 0 && <p className="text-muted-foreground text-center py-8">No past events yet.</p>}
-            {pastEvents.map((ev) => (
+            {pastEvents.map((ev, index) => (
               <div
-                key={ev.id}
+                key={`event-${ev.id}-${index}`}
                 className="bg-card rounded-xl p-4 shadow-sm border border-border active:bg-muted transition-colors"
                 onContextMenu={(e) => handleLongPress(ev.id, e)}
                 onTouchStart={(e) => {
@@ -136,9 +142,9 @@ const HistoryPage = ({ events, expenses, onDeleteEvent, onDeleteExpense, onEditE
         ) : (
           <>
             {sortedExpenses.length === 0 && <p className="text-muted-foreground text-center py-8">No expenses yet.</p>}
-            {sortedExpenses.map((ex) => (
+            {sortedExpenses.map((ex, index) => (
               <div
-                key={ex.id}
+                key={`expense-${ex.id}-${index}`}
                 className="bg-card rounded-xl p-4 shadow-sm border border-border active:bg-muted transition-colors"
                 onContextMenu={(e) => handleLongPress(ex.id, e)}
                 onTouchStart={(e) => {
