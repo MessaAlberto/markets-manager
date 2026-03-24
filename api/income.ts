@@ -1,8 +1,12 @@
 // api/income.ts
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { sheets, SPREADSHEET_ID, MARKET_SHEET_NAME, findRowById } from './googleClient';
+import { sheets, SPREADSHEET_ID, MARKET_SHEET_NAME, findRowById, checkAuth } from './googleClient';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (!checkAuth(req)) {
+    return res.status(401).json({ success: false, message: 'Unauthorized' });
+  }
+
   if (req.method !== 'PUT') {
     res.setHeader('Allow', ['PUT']);
     return res.status(405).json({ success: false, message: `Method ${req.method} Not Allowed` });

@@ -1,21 +1,23 @@
-// api/googleClient.ts
-import fs from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
 import { google } from 'googleapis';
+import type { VercelRequest } from '@vercel/node';
 
 export const SPREADSHEET_ID = '1DillpLJByP2kyqKAfPCBRbWYerg4golrswlEGx0sUg0';
 export const EXP_SHEET_NAME = 'Spese';
 export const MARKET_SHEET_NAME = 'Mercatini';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+export function checkAuth(req: VercelRequest): boolean {
+  const providedPin = req.headers['x-api-pin'];
+  const secretPin = process.env.API_SECRET_PIN;
 
-const keyPath = join(__dirname, 'service-account.json');
-const keyFile = JSON.parse(fs.readFileSync(keyPath, 'utf-8'));
+  if (!secretPin) return true;
+  return providedPin === secretPin;
+}
 
 const auth = new google.auth.GoogleAuth({
-  credentials: keyFile,
+  credentials: {
+    client_email: process.env.GOOGLE_CLIENT_EMAIL,
+    private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+  },
   scopes: ['https://www.googleapis.com/auth/spreadsheets'],
 });
 

@@ -58,9 +58,16 @@ const AddExpenseDialog = ({ open, onClose, onAdd, editExpense }: Props) => {
         method,
         headers: {
           "Content-Type": "application/json",
+          "x-api-pin": localStorage.getItem("mercatini-pin") || ""
         },
         body: JSON.stringify(payload),
       });
+
+      if (response.status === 401) {
+        toast.error("Wrong or changed PIN. Please log in again.");
+        onClose();
+        return;
+      }
 
       const data = await response.json();
 

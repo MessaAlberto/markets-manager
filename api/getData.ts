@@ -1,6 +1,6 @@
 // api/getData.ts
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { sheets, SPREADSHEET_ID, EXP_SHEET_NAME, MARKET_SHEET_NAME } from './googleClient';
+import { sheets, SPREADSHEET_ID, EXP_SHEET_NAME, MARKET_SHEET_NAME, checkAuth } from './googleClient';
 
 function parseSheetDate(value: any): string {
   if (!value) return '';
@@ -14,6 +14,10 @@ function parseSheetDate(value: any): string {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {
     return res.status(405).json({ success: false, message: 'Method Not Allowed' });
+  }
+
+  if (!checkAuth(req)) {
+    return res.status(401).json({ success: false, message: 'Unauthorized' });
   }
 
   try {

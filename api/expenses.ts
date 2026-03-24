@@ -1,9 +1,13 @@
 // api/expenses.ts
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { sheets, SPREADSHEET_ID, EXP_SHEET_NAME, findRowById, deleteRowById } from './googleClient';
+import { sheets, SPREADSHEET_ID, EXP_SHEET_NAME, findRowById, deleteRowById, checkAuth } from './googleClient';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const method = req.method;
+
+  if (!checkAuth(req)) {
+    return res.status(401).json({ success: false, message: 'Unauthorized' });
+  }
 
   try {
     switch (method) {

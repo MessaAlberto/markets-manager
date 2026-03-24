@@ -56,8 +56,6 @@ const AddEventDialog = ({ open, onClose, onAdd, editEvent }: Props) => {
 
   useEffect(() => {
     if (open && editEvent) {
-      // Se modifichi un evento che era stato salvato come "(Nessun Evento)", 
-      // mostriamo il campo vuoto per pulizia visiva, altrimenti mostriamo il nome.
       setName(editEvent.name === "(Nessun Evento)" ? "" : editEvent.name);
       setLocation(editEvent.location === "(Nessun Luogo)" ? "" : editEvent.location);
       setDate(editEvent.date);
@@ -71,7 +69,6 @@ const AddEventDialog = ({ open, onClose, onAdd, editEvent }: Props) => {
 
   const handleSubmit = async () => {
     try {
-      // Ora nome e location non sono più obbligatori per passare il check!
       if (!date || !cost) {
         toast.error("Please fill in Date and Cost", { duration: 2500 });
         return;
@@ -82,7 +79,6 @@ const AddEventDialog = ({ open, onClose, onAdd, editEvent }: Props) => {
       const isEdit = !!editEvent;
       const method = isEdit ? "PUT" : "POST";
 
-      // Applichiamo i valori di default se i campi sono vuoti o contengono solo spazi
       const finalName = name.trim() !== "" ? name.trim() : "(Nessun Evento)";
       const finalLocation = location.trim() !== "" ? location.trim() : "(Nessun Luogo)";
 
@@ -103,9 +99,16 @@ const AddEventDialog = ({ open, onClose, onAdd, editEvent }: Props) => {
         method,
         headers: {
           "Content-Type": "application/json",
+          "x-api-pin": localStorage.getItem("mercatini-pin") || ""
         },
         body: JSON.stringify(payload),
       });
+
+      if (response.status === 401) {
+        toast.error("Wrong or changed PIN. Please log in again.");
+        onClose();
+        return;
+      }
 
       const data = await response.json();
 

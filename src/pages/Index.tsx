@@ -1,4 +1,3 @@
-// pages/Index.tsx
 import { useState, useEffect } from "react";
 import BottomNav from "@/components/BottomNav";
 import AddPopup from "@/components/AddPopup";
@@ -9,37 +8,78 @@ import SummaryPage from "@/pages/SummaryPage";
 import HistoryPage from "@/pages/HistoryPage";
 import StatisticsPage from "@/pages/StatisticsPage";
 import { useAppData, MarketEvent, Expense } from "@/lib/store";
-import { Loader2 } from "lucide-react";
+import { Loader2, Lock, KeyRound } from "lucide-react";
 import { toast } from "sonner";
 
 const Index = () => {
+  const [pin, setPin] = useState("");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authChecking, setAuthChecking] = useState(true);
+
   const [page, setPage] = useState(0);
   const [popupOpen, setPopupOpen] = useState(false);
   const [expenseOpen, setExpenseOpen] = useState(false);
   const [eventOpen, setEventOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<MarketEvent | null>(null);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
-  
   const [loading, setLoading] = useState(true);
 
   const { events, expenses, addEvent, updateEvent, deleteEvent, addExpense, updateExpense, deleteExpense, setInitialData } = useAppData();
 
   useEffect(() => {
+    const savedPin = localStorage.getItem("mercatini-pin");
+    if (savedPin) {
+      setIsAuthenticated(true);
+    }
+    setAuthChecking(false);
+  }, []);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pin.trim()) return;
+    localStorage.setItem("mercatini-pin", pin);
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("mercatini-pin");
+    setPin("");
+    setIsAuthenticated(false);
+    setLoading(true);
+  };
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
     const fetchInitialData = async () => {
       try {
-        const response = await fetch('/api/getData');
+        const savedPin = localStorage.getItem("mercatini-pin") || "";
+        const response = await fetch('/api/getData', {
+          headers: { 'x-api-pin': savedPin }
+        });
+
+        if (response.status === 401) {
+          toast.error("Wrong or changed PIN. Please log in again.");
+          handleLogout();
+          return;
+        }
+
         const data = await response.json();
         if (data.success) {
           setInitialData(data.events, data.expenses);
+        } else {
+          toast.error("Failed to load data: " + (data.message || "Unknown error"));
         }
       } catch (error) {
-        console.error("Errore nel recupero dati:", error);
+        console.error("Error fetching initial data:", error);
+        toast.error("Server error while loading data");
       } finally {
         setLoading(false);
       }
     };
+
     fetchInitialData();
-  }, [setInitialData]);
+  }, [isAuthenticated, setInitialData]);
 
   const handleEditEvent = (event: MarketEvent) => {
     setEditingEvent(event);
@@ -73,51 +113,91 @@ const Index = () => {
 
   const handleServerDeleteEvent = async (id: string) => {
     try {
+      const savedPin = localStorage.getItem("mercatini-pin") || "";
       const res = await fetch('/api/events', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-pin': savedPin
+        },
         body: JSON.stringify({ id })
       });
+      if (res.status === 401) {
+        toast.error("Wrong or changed PIN. Please log in again.");
+        handleLogout(); return;
+      }
       const data = await res.json();
-      
       if (data.success) {
         deleteEvent(id);
-        toast.success("Event deleted successfully", { duration: 2500 });
-      } else {
-        toast.error("Failed to delete event", { duration: 2500 });
+        toast.success("Event deleted");
       }
-    } catch (e) {
-      console.error(e);
-      toast.error("Server error during deletion", { duration: 2500 });
-    }
+    } catch (e) { toast.error("Server error"); }
   };
 
   const handleServerDeleteExpense = async (id: string) => {
     try {
+      const savedPin = localStorage.getItem("mercatini-pin") || "";
       const res = await fetch('/api/expenses', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-pin': savedPin
+        },
         body: JSON.stringify({ id })
       });
+      if (res.status === 401) {
+        toast.error("Wrong or changed PIN. Please log in again.");
+        handleLogout(); return;
+      }
       const data = await res.json();
-      
       if (data.success) {
         deleteExpense(id);
-        toast.success("Expense deleted successfully", { duration: 2500 });
-      } else {
-        toast.error("Failed to delete expense", { duration: 2500 });
+        toast.success("Expense deleted");
       }
-    } catch (e) {
-      console.error(e);
-      toast.error("Server error during deletion", { duration: 2500 });
-    }
+    } catch (e) { toast.error("Server error"); }
   };
+
+  if (authChecking) return null;
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center max-w-lg mx-auto p-6">
+        <div className="bg-card w-full p-8 rounded-3xl shadow-lg border border-border flex flex-col items-center text-center">
+          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-6">
+            <Lock className="text-primary" size={32} />
+          </div>
+          <h1 className="text-2xl font-extrabold mb-2">Private Area</h1>
+          <p className="text-muted-foreground mb-8 text-sm">Enter your PIN to access your data.</p>
+
+          <form onSubmit={handleLogin} className="w-full space-y-4">
+            <div className="relative">
+              <KeyRound className="absolute left-4 top-4 text-muted-foreground" size={20} />
+              <input
+                type="password"
+                value={pin}
+                onChange={(e) => setPin(e.target.value)}
+                placeholder="Secret PIN"
+                className="w-full h-14 pl-12 pr-4 rounded-xl border border-border bg-background text-lg focus:ring-2 focus:ring-primary outline-none transition-all"
+                autoFocus
+              />
+            </div>
+            <button
+              type="submit"
+              className="w-full h-14 bg-primary text-primary-foreground font-bold rounded-xl active:scale-[0.98] transition-transform text-lg"
+            >
+              Continue
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center max-w-lg mx-auto">
         <Loader2 className="animate-spin text-primary mb-4" size={48} />
-        <p className="text-muted-foreground font-semibold text-lg">Caricamento database...</p>
+        <p className="text-muted-foreground font-semibold text-lg">Synchronizing...</p>
       </div>
     );
   }
