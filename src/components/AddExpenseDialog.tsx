@@ -10,7 +10,7 @@ import { toast } from "sonner";
 interface Props {
   open: boolean;
   onClose: () => void;
-  onAdd: (data: { title: string; date: string; cost: number }) => void;
+  onAdd: (data: { id?: string | number; title: string; date: string; cost: number }) => void;
   editExpense?: Expense | null;
 }
 
@@ -27,9 +27,15 @@ const AddExpenseDialog = ({ open, onClose, onAdd, editExpense }: Props) => {
       setDate(editExpense.date);
       setCost(editExpense.cost.toString());
     } else if (open && !editExpense) {
-      setTitle(""); setDate(today); setCost("");
+      resetForm();
     }
   }, [open, editExpense]);
+
+  const resetForm = () => {
+    setTitle("");
+    setDate(today);
+    setCost("");
+  };
 
   const handleSubmit = async () => {
     try {
@@ -37,15 +43,41 @@ const AddExpenseDialog = ({ open, onClose, onAdd, editExpense }: Props) => {
         toast.error("Please fill in all required fields", { duration: 2500 });
         return;
       }
+
       setSaving(true);
-      await new Promise(r => setTimeout(r, 400));
-      onAdd({ title, date, cost: parseFloat(cost) });
-      if (!editExpense) { setTitle(""); setDate(today); setCost(""); }
-      toast.success(editExpense ? "Expense updated!" : "Expense added!", { duration: 2500 });
-      onClose();
-    } catch {
-      toast.error("Failed to save expense", { duration: 2500 });
-      onClose();
+
+      const method = editExpense ? "PUT" : "POST";
+      const payload = {
+        ...(editExpense && { id: editExpense.id }),
+        title,
+        date,
+        cost: parseFloat(cost),
+      };
+
+      const response = await fetch("/api/expenses", {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success(editExpense ? "Expense updated successfully!" : "Expense added successfully!", { duration: 2500 });
+        
+        const finalPayload = editExpense ? payload : { ...payload, id: data.id };
+        onAdd(finalPayload);
+        
+        resetForm();
+        onClose();
+      } else {
+        toast.error(data.message || "Failed to save expense", { duration: 2500 });
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Server error", { duration: 2500 });
     } finally {
       setSaving(false);
     }

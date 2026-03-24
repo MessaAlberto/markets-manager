@@ -11,7 +11,7 @@ import { toast } from "sonner";
 interface Props {
   open: boolean;
   onClose: () => void;
-  onAdd: (data: { name: string; location: string; date: string; participationCost: number; alreadyPaid: boolean }) => void;
+  onAdd: (data: { id?: string | number; name: string; location: string; date: string; participationCost: number; alreadyPaid: boolean }) => void;
   editEvent?: MarketEvent | null;
 }
 
@@ -23,6 +23,14 @@ const AddEventDialog = ({ open, onClose, onAdd, editEvent }: Props) => {
   const [paid, setPaid] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  const resetForm = () => {
+    setName("");
+    setLocation("");
+    setDate("");
+    setCost("");
+    setPaid(false);
+  };
+
   useEffect(() => {
     if (open && editEvent) {
       setName(editEvent.name);
@@ -31,7 +39,7 @@ const AddEventDialog = ({ open, onClose, onAdd, editEvent }: Props) => {
       setCost(editEvent.participationCost.toString());
       setPaid(editEvent.alreadyPaid);
     } else if (open && !editEvent) {
-      setName(""); setLocation(""); setDate(""); setCost(""); setPaid(false);
+      resetForm();
     }
   }, [open, editEvent]);
 
@@ -41,14 +49,43 @@ const AddEventDialog = ({ open, onClose, onAdd, editEvent }: Props) => {
         toast.error("Please fill in all required fields", { duration: 2500 });
         return;
       }
+      
       setSaving(true);
-      await new Promise(r => setTimeout(r, 400));
-      onAdd({ name, location, date, participationCost: parseFloat(cost), alreadyPaid: paid });
-      toast.success(editEvent ? "Event updated!" : "Event added!", { duration: 2500 });
-      onClose();
-    } catch {
-      toast.error("Failed to save event", { duration: 2500 });
-      onClose();
+      
+      const method = editEvent ? "PUT" : "POST";
+      const payload = {
+        ...(editEvent && { id: editEvent.id }),
+        name,
+        location,
+        date,
+        participationCost: parseFloat(cost),
+        alreadyPaid: paid,
+      };
+
+      const response = await fetch("/api/events", {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success(editEvent ? "Event updated successfully!" : "Event added successfully!", { duration: 2500 });
+
+        const finalPayload = editEvent ? payload : { ...payload, id: data.id };
+        onAdd(finalPayload);
+        
+        resetForm();
+        onClose();
+      } else {
+        toast.error(data.message || "Failed to save event", { duration: 2500 });
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Server error", { duration: 2500 });
     } finally {
       setSaving(false);
     }

@@ -29,21 +29,29 @@ const Index = () => {
     setExpenseOpen(true);
   };
 
-  const handleEventSubmit = (data: { name: string; location: string; date: string; participationCost: number; alreadyPaid: boolean }) => {
+  const handleEventSubmit = (data: { id?: string | number; name: string; location: string; date: string; participationCost: number; alreadyPaid: boolean }) => {
     if (editingEvent) {
-      updateEvent(editingEvent.id, data);
+      const updateData = {
+        ...data,
+        id: data.id?.toString()
+      };
+      updateEvent(editingEvent.id, updateData as Partial<MarketEvent>);
       setEditingEvent(null);
     } else {
-      addEvent(data);
+      addEvent(data as any);
     }
   };
 
-  const handleExpenseSubmit = (data: { title: string; date: string; cost: number }) => {
+  const handleExpenseSubmit = (data: { id?: string | number; title: string; date: string; cost: number }) => {
     if (editingExpense) {
-      updateExpense(editingExpense.id, data);
+      const updateData = {
+        ...data,
+        id: data.id?.toString()
+      };
+      updateExpense(editingExpense.id, updateData as Partial<Expense>);
       setEditingExpense(null);
     } else {
-      addExpense(data);
+      addExpense(data as any);
     }
   };
 

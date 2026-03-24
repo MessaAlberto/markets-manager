@@ -61,8 +61,10 @@ export function useAppData() {
     };
   });
 
-  const addEvent = (e: Omit<MarketEvent, "id">) => {
-    globalEvents = [...globalEvents, { ...e, id: Date.now().toString() }];
+  // MODIFICATO: Accetta un ID opzionale ed evita di sovrascriverlo se esiste
+  const addEvent = (e: Omit<MarketEvent, "id"> & { id?: string | number }) => {
+    const newId = e.id ? e.id.toString() : Date.now().toString();
+    globalEvents = [...globalEvents, { ...e, id: newId }];
     notify();
   };
 
@@ -76,8 +78,10 @@ export function useAppData() {
     notify();
   };
 
-  const addExpense = (e: Omit<Expense, "id">) => {
-    globalExpenses = [...globalExpenses, { ...e, id: Date.now().toString() }];
+  // MODIFICATO: Accetta un ID opzionale ed evita di sovrascriverlo se esiste
+  const addExpense = (e: Omit<Expense, "id"> & { id?: string | number }) => {
+    const newId = e.id ? e.id.toString() : Date.now().toString();
+    globalExpenses = [...globalExpenses, { ...e, id: newId }];
     notify();
   };
 
