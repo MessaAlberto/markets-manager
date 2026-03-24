@@ -9,7 +9,7 @@ import { toast } from "sonner";
 interface Props {
   open: boolean;
   onClose: () => void;
-  eventId: string | number; // Update parent component to pass this
+  eventId: string | number;
   eventName: string;
   onAdd: (income: number) => void;
 }
@@ -24,7 +24,7 @@ const AddIncomeDialog = ({ open, onClose, eventId, eventName, onAdd }: Props) =>
         toast.error("Please enter an income amount", { duration: 2500 });
         return;
       }
-      
+
       setSaving(true);
       const parsedIncome = parseFloat(income);
 
@@ -58,8 +58,12 @@ const AddIncomeDialog = ({ open, onClose, eventId, eventName, onAdd }: Props) =>
   };
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-[90vw] rounded-2xl">
+    <Dialog open={open} onOpenChange={(o) => !o && !saving && onClose()}>
+      <DialogContent
+        className="max-w-[90vw] rounded-2xl"
+        onInteractOutside={(e) => saving && e.preventDefault()}
+        onEscapeKeyDown={(e) => saving && e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">Add Income</DialogTitle>
         </DialogHeader>
@@ -67,7 +71,7 @@ const AddIncomeDialog = ({ open, onClose, eventId, eventName, onAdd }: Props) =>
         <div className="space-y-4 mt-2">
           <div>
             <Label className="text-base font-semibold">Income (€)</Label>
-            <Input className="mt-1 text-base h-12" type="number" step="0.01" value={income} onChange={(e) => setIncome(e.target.value)} placeholder="0.00" />
+            <Input disabled={saving} className="mt-1 text-base h-12" type="number" step="0.01" value={income} onChange={(e) => setIncome(e.target.value)} placeholder="0.00" />
           </div>
           <Button onClick={handleSubmit} disabled={saving} className="w-full h-12 text-base font-bold">
             {saving && <Loader2 className="animate-spin mr-2" size={18} />}

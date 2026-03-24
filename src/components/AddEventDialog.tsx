@@ -103,33 +103,38 @@ const AddEventDialog = ({ open, onClose, onAdd, editEvent }: Props) => {
   const isEdit = !!editEvent;
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-[90vw] rounded-2xl">
+    <Dialog open={open} onOpenChange={(o) => !o && !saving && onClose()}>
+      <DialogContent
+        className="max-w-[90vw] rounded-2xl"
+        onInteractOutside={(e) => saving && e.preventDefault()}
+        onEscapeKeyDown={(e) => saving && e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">{isEdit ? "Edit Market Event" : "Add Market Event"}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 mt-2">
           <div>
             <Label className="text-base font-semibold">Event Name</Label>
-            <Input className="mt-1 text-base h-12" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Sunday Bazaar" />
+            <Input disabled={saving} className="mt-1 text-base h-12" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Sunday Bazaar" />
           </div>
           <div>
             <Label className="text-base font-semibold">Location</Label>
-            <Input className="mt-1 text-base h-12" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. City Center" />
+            <Input disabled={saving} className="mt-1 text-base h-12" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. City Center" />
           </div>
           <div>
             <Label className="text-base font-semibold">Date</Label>
-            <Input className="mt-1 text-base h-12" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            <Input disabled={saving} className="mt-1 text-base h-12" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
           <div>
             <Label className="text-base font-semibold">Participation Cost (€)</Label>
-            <Input className="mt-1 text-base h-12" type="number" step="0.01" value={cost} onChange={(e) => setCost(e.target.value)} placeholder="0.00" />
+            <Input disabled={saving} className="mt-1 text-base h-12" type="number" step="0.01" value={cost} onChange={(e) => setCost(e.target.value)} placeholder="0.00" />
           </div>
 
           {isEdit && (
             <div>
               <Label className="text-base font-semibold text-primary">Income (€)</Label>
               <Input
+                disabled={saving}
                 className="mt-1 text-base h-12 border-primary/50 bg-primary/5"
                 type="number"
                 step="0.01"
@@ -141,8 +146,8 @@ const AddEventDialog = ({ open, onClose, onAdd, editEvent }: Props) => {
           )}
 
           <div className="flex items-center gap-3 pt-1">
-            <Checkbox id="paid" checked={paid} onCheckedChange={(v) => setPaid(!!v)} className="w-6 h-6" />
-            <Label htmlFor="paid" className="text-base font-semibold cursor-pointer">Already Paid Participation Cost</Label>
+            <Checkbox disabled={saving} id="paid" checked={paid} onCheckedChange={(v) => setPaid(!!v)} className="w-6 h-6" />
+            <Label htmlFor="paid" className={`text-base font-semibold cursor-pointer ${saving ? "opacity-50" : ""}`}>Already Paid Participation Cost</Label>
           </div>
 
           <Button onClick={handleSubmit} disabled={saving} className="w-full h-12 text-base font-bold mt-2">

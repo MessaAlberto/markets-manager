@@ -13,7 +13,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 interface Props {
   events: MarketEvent[];
   onUpdateEvent: (id: string, updates: Partial<MarketEvent>) => void;
-  onDeleteEvent: (id: string) => void;
+  onDeleteEvent: (id: string) => Promise<void>;
   onEditEvent: (event: MarketEvent) => void;
 }
 
@@ -153,7 +153,7 @@ const RemindersPage = ({ events, onUpdateEvent, onDeleteEvent, onEditEvent }: Pr
           open={contextMenu.open}
           onClose={() => setContextMenu((c) => ({ ...c, open: false }))}
           onEdit={() => contextEvent && onEditEvent(contextEvent)}
-          onDelete={() => onDeleteEvent(contextMenu.id)}
+          onDelete={() => {return onDeleteEvent(contextMenu.id)}}
           position={contextMenu.pos}
         />
 

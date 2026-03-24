@@ -8,8 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 interface Props {
   events: MarketEvent[];
   expenses: Expense[];
-  onDeleteEvent: (id: string) => void;
-  onDeleteExpense: (id: string) => void;
+  onDeleteEvent: (id: string) => Promise<void>;
+  onDeleteExpense: (id: string) => Promise<void>;
   onEditEvent: (event: MarketEvent) => void;
   onEditExpense: (expense: Expense) => void;
 }
@@ -170,8 +170,8 @@ const HistoryPage = ({ events, expenses, onDeleteEvent, onDeleteExpense, onEditE
         onClose={() => setContextMenu((c) => ({ ...c, open: false }))}
         onEdit={handleEdit}
         onDelete={() => {
-          if (view === "events") onDeleteEvent(contextMenu.id);
-          else onDeleteExpense(contextMenu.id);
+          if (view === "events") return onDeleteEvent(contextMenu.id);
+          else return onDeleteExpense(contextMenu.id);
         }}
         position={contextMenu.pos}
       />

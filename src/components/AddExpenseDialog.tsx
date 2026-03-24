@@ -66,10 +66,10 @@ const AddExpenseDialog = ({ open, onClose, onAdd, editExpense }: Props) => {
 
       if (data.success) {
         toast.success(editExpense ? "Expense updated successfully!" : "Expense added successfully!", { duration: 2500 });
-        
+
         const finalPayload = editExpense ? payload : { ...payload, id: data.id };
         onAdd(finalPayload);
-        
+
         resetForm();
         onClose();
       } else {
@@ -86,23 +86,27 @@ const AddExpenseDialog = ({ open, onClose, onAdd, editExpense }: Props) => {
   const isEdit = !!editExpense;
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-[90vw] rounded-2xl">
+    <Dialog open={open} onOpenChange={(o) => !o && !saving && onClose()}>
+      <DialogContent
+        className="max-w-[90vw] rounded-2xl"
+        onInteractOutside={(e) => saving && e.preventDefault()}
+        onEscapeKeyDown={(e) => saving && e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">{isEdit ? "Edit Expense" : "Add Expense"}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 mt-2">
           <div>
             <Label className="text-base font-semibold">Title</Label>
-            <Input className="mt-1 text-base h-12" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Display Stand" />
+            <Input disabled={saving} className="mt-1 text-base h-12" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Display Stand" />
           </div>
           <div>
             <Label className="text-base font-semibold">Date</Label>
-            <Input className="mt-1 text-base h-12" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            <Input disabled={saving} className="mt-1 text-base h-12" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
           <div>
             <Label className="text-base font-semibold">Cost (€)</Label>
-            <Input className="mt-1 text-base h-12" type="number" step="0.01" value={cost} onChange={(e) => setCost(e.target.value)} placeholder="0.00" />
+            <Input disabled={saving} className="mt-1 text-base h-12" type="number" step="0.01" value={cost} onChange={(e) => setCost(e.target.value)} placeholder="0.00" />
           </div>
           <Button onClick={handleSubmit} disabled={saving} className="w-full h-12 text-base font-bold">
             {saving && <Loader2 className="animate-spin mr-2" size={18} />}
