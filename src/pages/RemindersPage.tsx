@@ -47,27 +47,43 @@ const RemindersPage = ({ events, onUpdateEvent, onDeleteEvent, onEditEvent }: Pr
   };
 
   const downloadICS = (event: MarketEvent, reminder: Reminder) => {
-    const dateStr = reminder.date.replace(/-/g, "");
-    const timeStr = reminder.time.replace(/:/g, "") + "00";
-    const startDateTime = `${dateStr}T${timeStr}`;
+    const startDate = new Date(`${reminder.date}T${reminder.time}:00`);
+    const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
 
+    const formatICSDate = (d: Date) => {
+      return d.getFullYear().toString() +
+        (d.getMonth() + 1).toString().padStart(2, '0') +
+        d.getDate().toString().padStart(2, '0') + "T" +
+        d.getHours().toString().padStart(2, '0') +
+        d.getMinutes().toString().padStart(2, '0') +
+        d.getSeconds().toString().padStart(2, '0');
+    };
+
+    const dtStart = formatICSDate(startDate);
+    const dtEnd = formatICSDate(endDate);
+    const dtStamp = new Date().toISOString().replace(/[-:]/g, "").split('.')[0] + "Z";
     const icsContent = [
       "BEGIN:VCALENDAR",
       "VERSION:2.0",
+      "PRODID:-//Markets Manager//App//IT",
+      "CALSCALE:GREGORIAN",
+      "METHOD:PUBLISH",
       "BEGIN:VEVENT",
-      `UID:market-reminder-${event.id}@marketsmanager`,
-      `DTSTART:${startDateTime}`,
+      `UID:reminder-${event.id}-${Date.now()}@marketsmanager`,
+      `DTSTAMP:${dtStamp}`,
+      `DTSTART:${dtStart}`,
+      `DTEND:${dtEnd}`,
       `SUMMARY:${reminder.message} - ${event.name || event.location}`,
       `LOCATION:${event.location || ""}`,
       "END:VEVENT",
       "END:VCALENDAR"
-    ].join("\n");
+    ].join("\r\n");
 
     const blob = new Blob([icsContent], { type: "text/calendar;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `${(event.name || event.location).replace(/\s+/g, "_")}_reminder.ics`);
+    link.setAttribute("download", `${(event.name || event.location || "evento").replace(/\s+/g, "_")}_reminder.ics`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -212,15 +228,18 @@ const RemindersPage = ({ events, onUpdateEvent, onDeleteEvent, onEditEvent }: Pr
               >
                 <div className="flex justify-between items-start">
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-base truncate">{ev.name || ev.location}</h3>
+                    <h3 className="font-bold text-base flex items-center gap-1.5 min-w-0">
+                      {!ev.name && ev.location && <MapPin size={16} className="text-muted-foreground shrink-0" />}
+                      <span className="truncate">{ev.name || ev.location}</span>
+                    </h3>
                     {ev.name && ev.location && (
                       <div className="flex items-center gap-1 text-muted-foreground text-sm mt-1">
-                        <MapPin size={14} />
+                        <MapPin size={14} className="shrink-0" />
                         <span className="truncate">{ev.location}</span>
                       </div>
                     )}
                     <div className="flex items-center gap-1 text-muted-foreground text-sm mt-0.5">
-                      <Calendar size={14} />
+                      <Calendar size={14} className="shrink-0" />
                       <span>{format(eventDate, "dd MMM yyyy")}</span>
                     </div>
                   </div>
@@ -241,7 +260,7 @@ const RemindersPage = ({ events, onUpdateEvent, onDeleteEvent, onEditEvent }: Pr
                                 if (ev.mapsLink) {
                                   window.location.href = ev.mapsLink;
                                 } else {
-                                  window.location.href = `https://www.google.com/maps/search/?api=1&query=$${ev.location ? encodeURIComponent(ev.location) : ""}`;
+                                  window.location.href = `http://googleusercontent.com/maps.google.com/3${ev.location ? encodeURIComponent(ev.location) : ""}`;
                                 }
                               }}
                               className="p-2 rounded-lg bg-muted active:scale-95 transition-transform"

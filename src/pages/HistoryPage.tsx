@@ -145,14 +145,17 @@ const HistoryPage = ({ events, expenses, onDeleteEvent, onDeleteExpense, onEditE
               >
                 <div className="flex justify-between items-center">
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-base truncate">{ev.name || ev.location}</h3>
+                    <h3 className="font-bold text-base flex items-center gap-1.5 min-w-0">
+                      {!ev.name && ev.location && <MapPin size={16} className="text-muted-foreground shrink-0" />}
+                      <span className="truncate">{ev.name || ev.location}</span>
+                    </h3>
                     {ev.name && ev.location && (
                       <div className="flex items-center gap-1 text-muted-foreground text-sm mt-1">
-                        <MapPin size={14} /><span className="truncate">{ev.location}</span>
+                        <MapPin size={14} className="shrink-0" /><span className="truncate">{ev.location}</span>
                       </div>
                     )}
                     <div className="flex items-center gap-1 text-muted-foreground text-sm mt-0.5">
-                      <Calendar size={14} /><span>{format(new Date(ev.date), "dd MMM yyyy")}</span>
+                      <Calendar size={14} className="shrink-0" /><span>{format(new Date(ev.date), "dd MMM yyyy")}</span>
                     </div>
                   </div>
                   {ev.income != null && (
