@@ -2,8 +2,8 @@ import { google } from 'googleapis';
 import type { VercelRequest } from '@vercel/node';
 
 export const SPREADSHEET_ID = '1DillpLJByP2kyqKAfPCBRbWYerg4golrswlEGx0sUg0';
-export const EXP_SHEET_NAME = 'Spese';
-export const MARKET_SHEET_NAME = 'Mercatini';
+export const EXP_SHEET_NAME = process.env.EXP_SHEET_NAME;
+export const MARKET_SHEET_NAME = process.env.MARKET_SHEET_NAME;
 
 export function checkAuth(req: VercelRequest): boolean {
   const providedPin = req.headers['x-api-pin'];
