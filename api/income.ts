@@ -18,7 +18,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ success: false, message: 'Missing required fields' });
     }
 
-    const rowToUpdate = await findRowById(MARKET_SHEET_NAME, id);
+    const rowToUpdate = await findRowById(MARKET_SHEET_NAME as string, id);
     if (rowToUpdate === -1) throw new Error("Event not found");
 
     await sheets.spreadsheets.values.update({

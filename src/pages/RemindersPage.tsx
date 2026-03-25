@@ -57,8 +57,8 @@ const RemindersPage = ({ events, onUpdateEvent, onDeleteEvent, onEditEvent }: Pr
       "BEGIN:VEVENT",
       `UID:market-reminder-${event.id}@marketsmanager`,
       `DTSTART:${startDateTime}`,
-      `SUMMARY:${reminder.message} - ${event.name}`,
-      `LOCATION:${event.location}`,
+      `SUMMARY:${reminder.message} - ${event.name || event.location}`,
+      `LOCATION:${event.location || ""}`,
       "END:VEVENT",
       "END:VCALENDAR"
     ].join("\n");
@@ -67,7 +67,7 @@ const RemindersPage = ({ events, onUpdateEvent, onDeleteEvent, onEditEvent }: Pr
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `${event.name.replace(/\s+/g, "_")}_reminder.ics`);
+    link.setAttribute("download", `${(event.name || event.location).replace(/\s+/g, "_")}_reminder.ics`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -212,11 +212,13 @@ const RemindersPage = ({ events, onUpdateEvent, onDeleteEvent, onEditEvent }: Pr
               >
                 <div className="flex justify-between items-start">
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-base truncate">{ev.name}</h3>
-                    <div className="flex items-center gap-1 text-muted-foreground text-sm mt-1">
-                      <MapPin size={14} />
-                      <span className="truncate">{ev.location}</span>
-                    </div>
+                    <h3 className="font-bold text-base truncate">{ev.name || ev.location}</h3>
+                    {ev.name && ev.location && (
+                      <div className="flex items-center gap-1 text-muted-foreground text-sm mt-1">
+                        <MapPin size={14} />
+                        <span className="truncate">{ev.location}</span>
+                      </div>
+                    )}
                     <div className="flex items-center gap-1 text-muted-foreground text-sm mt-0.5">
                       <Calendar size={14} />
                       <span>{format(eventDate, "dd MMM yyyy")}</span>
@@ -225,7 +227,7 @@ const RemindersPage = ({ events, onUpdateEvent, onDeleteEvent, onEditEvent }: Pr
                   <div className="flex gap-2 items-center ml-2 shrink-0">
                     {past ? (
                       <button
-                        onClick={() => setIncomeDialog({ open: true, id: ev.id, name: ev.name })}
+                        onClick={() => setIncomeDialog({ open: true, id: ev.id, name: ev.name || ev.location })}
                         className="flex items-center gap-1 px-3 py-2 rounded-lg bg-income text-primary-foreground font-bold text-sm active:scale-95 transition-transform"
                       >
                         <DollarSign size={16} /> {t("add_income")}
@@ -239,7 +241,7 @@ const RemindersPage = ({ events, onUpdateEvent, onDeleteEvent, onEditEvent }: Pr
                                 if (ev.mapsLink) {
                                   window.location.href = ev.mapsLink;
                                 } else {
-                                  window.location.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ev.location)}`;
+                                  window.location.href = `https://www.google.com/maps/search/?api=1&query=$${ev.location ? encodeURIComponent(ev.location) : ""}`;
                                 }
                               }}
                               className="p-2 rounded-lg bg-muted active:scale-95 transition-transform"
@@ -272,8 +274,8 @@ const RemindersPage = ({ events, onUpdateEvent, onDeleteEvent, onEditEvent }: Pr
                         {missingPayment && (
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <button 
-                                onClick={() => setPaymentDialog({ open: true, id: ev.id, name: ev.name, cost: ev.participationCost })}
+                              <button
+                                onClick={() => setPaymentDialog({ open: true, id: ev.id, name: ev.name || ev.location, cost: ev.participationCost })}
                                 className="flex items-center gap-1 px-2 py-2 rounded-lg bg-expense/10 active:scale-95 transition-transform"
                               >
                                 <CreditCard size={16} className="text-expense" />

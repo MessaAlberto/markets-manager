@@ -112,5 +112,24 @@
 
   "profit": "Profitto",
   "monthly_breakdown": "Resoconto Mensile",
-  "month": "Mese"
+  "month": "Mese",
+
+  "name_or_location_required": "Inserisci il Nome dell'evento o il Luogo",
+  "no_location": "(Nessun Luogo)",
+  "no_event": "(Nessun Evento)",
+
+  "missing_date": "Per favore, inserisci la data",
+  "add_event_success": "Evento aggiunto con successo!",
+  "update_event_success": "Evento aggiornato con successo!",
+  "failed_save_event": "Impossibile salvare l'evento",
+
+  "missing_fields": "Per favore, compila tutti i campi richiesti",
+  "add_expense_success": "Spesa aggiunta con successo!",
+  "update_expense_success": "Spesa aggiornata con successo!",
+  "failed_save_expense": "Impossibile salvare la spesa",
+
+  "missing_income_fields": "Per favore, compila tutti i campi richiesti",
+  "add_income_success": "Entrata aggiunta con successo!",
+  "update_income_success": "Entrata aggiornata con successo!",
+  "failed_save_income": "Impossibile salvare l'entrata"
 }

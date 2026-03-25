@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Pencil, Trash2, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -14,6 +14,17 @@ interface Props {
 const EventContextMenu = ({ open, onClose, onEdit, onDelete, position }: Props) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const { t } = useTranslation();
+
+  useEffect(() => {
+    if (isDeleting) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isDeleting]);
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -32,6 +43,7 @@ const EventContextMenu = ({ open, onClose, onEdit, onDelete, position }: Props) 
           <div
             className={`fixed inset-0 z-[100] transition-colors ${isDeleting ? "bg-background/50 cursor-wait" : ""}`}
             onClick={() => !isDeleting && onClose()}
+            onTouchMove={(e) => isDeleting && e.preventDefault()}
           />
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}

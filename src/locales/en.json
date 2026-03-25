@@ -112,5 +112,24 @@
   
   "profit": "Profit",
   "monthly_breakdown": "Monthly Breakdown",
-  "month": "Month"
+  "month": "Month",
+
+  "name_or_location_required": "Please provide either an Event Name or a Location",
+  "no_location": "(No Location)",
+  "no_event": "(No Event)",
+
+  "missing_date": "Please fill in Date",
+  "add_event_success": "Event added successfully!",
+  "update_event_success": "Event updated successfully!",
+  "failed_save_event": "Failed to save event",
+
+  "missing_fields": "Please fill in all required fields",
+  "add_expense_success": "Expense added successfully!",
+  "update_expense_success": "Expense updated successfully!",
+  "failed_save_expense": "Failed to save expense",
+
+  "missing_income_fields": "Please fill in all required fields",
+  "add_income_success": "Income added successfully!",
+  "update_income_success": "Income updated successfully!",
+  "failed_save_income": "Failed to save income"
 }

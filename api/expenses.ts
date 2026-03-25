@@ -54,7 +54,7 @@ async function handlePut(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ success: false, message: 'Missing required fields' });
   }
 
-  const rowToUpdate = await findRowById(EXP_SHEET_NAME, id);
+  const rowToUpdate = await findRowById(EXP_SHEET_NAME as string, id);
   if (rowToUpdate === -1) throw new Error("Expense not found");
 
   await sheets.spreadsheets.values.update({
@@ -73,6 +73,6 @@ async function handleDelete(req: VercelRequest, res: VercelResponse) {
   const { id } = req.body;
   if (!id) return res.status(400).json({ success: false, message: 'Missing ID' });
 
-  await deleteRowById(EXP_SHEET_NAME, id);
+  await deleteRowById(EXP_SHEET_NAME as string, id);
   return res.status(200).json({ success: true });
 }

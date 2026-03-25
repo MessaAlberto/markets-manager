@@ -23,7 +23,7 @@ const AddIncomeDialog = ({ open, onClose, eventId, eventName, onAdd }: Props) =>
   const handleSubmit = async () => {
     try {
       if (!income) {
-        toast.error("Please enter an income amount", { duration: 2500 });
+        toast.error(t("missing_income_fields"), { duration: 2500 });
         return;
       }
 
@@ -43,7 +43,7 @@ const AddIncomeDialog = ({ open, onClose, eventId, eventName, onAdd }: Props) =>
       });
 
       if (response.status === 401) {
-        toast.error("Wrong or changed PIN. Please log in again.");
+        toast.error(t("wrong_pin"), { duration: 2500 });
         onClose();
         return;
       }
@@ -53,14 +53,14 @@ const AddIncomeDialog = ({ open, onClose, eventId, eventName, onAdd }: Props) =>
       if (data.success) {
         onAdd(parsedIncome);
         setIncome("");
-        toast.success("Income added successfully!", { duration: 2500 });
+        toast.success(t("add_income_success"), { duration: 2500 });
         onClose();
       } else {
-        toast.error(data.message || "Failed to add income", { duration: 2500 });
+        toast.error(data.message || t("failed_save_income"), { duration: 2500 });
       }
     } catch (err) {
       console.error(err);
-      toast.error("Server error", { duration: 2500 });
+      toast.error(t("server_error"), { duration: 2500 });
     } finally {
       setSaving(false);
     }
@@ -69,7 +69,7 @@ const AddIncomeDialog = ({ open, onClose, eventId, eventName, onAdd }: Props) =>
   return (
     <Dialog open={open} onOpenChange={(o) => !o && !saving && onClose()}>
       <DialogContent
-        className="max-w-[90vw] rounded-2xl"
+        className={`max-w-[90vw] rounded-2xl ${saving ? "overflow-hidden" : "overflow-y-auto"}`}
         onInteractOutside={(e) => saving && e.preventDefault()}
         onEscapeKeyDown={(e) => saving && e.preventDefault()}
       >

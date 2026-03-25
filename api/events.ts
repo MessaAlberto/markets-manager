@@ -29,19 +29,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 async function handlePost(req: VercelRequest, res: VercelResponse) {
   const { name, location, date, participationCost, alreadyPaid, mapsLink } = req.body;
 
-  if (!name || !location || !date || participationCost === undefined) {
+  // MODIFICA: Almeno uno tra name e location deve essere presente
+  if ((!name && !location) || !date || participationCost === undefined) {
     return res.status(400).json({ success: false, message: 'Missing required fields' });
   }
 
   const newId = Date.now();
   const mLink = mapsLink || "";
+  const finalName = name || "";
+  const finalLocation = location || "";
 
   await sheets.spreadsheets.values.append({
     spreadsheetId: SPREADSHEET_ID,
     range: `${MARKET_SHEET_NAME}!A:K`,
     valueInputOption: 'USER_ENTERED',
     requestBody: {
-      values: [[newId, name, location, date, participationCost, alreadyPaid, "", "", "", "", mLink]],
+      values: [[newId, finalName, finalLocation, date, participationCost, alreadyPaid, "", "", "", "", mLink]],
     },
   });
 
@@ -51,11 +54,12 @@ async function handlePost(req: VercelRequest, res: VercelResponse) {
 async function handlePut(req: VercelRequest, res: VercelResponse) {
   const { id, name, location, date, participationCost, alreadyPaid, income, reminder, mapsLink } = req.body;
 
-  if (!id || !name || !location || !date || participationCost === undefined) {
+  // MODIFICA: Almeno uno tra name e location deve essere presente
+  if (!id || (!name && !location) || !date || participationCost === undefined) {
     return res.status(400).json({ success: false, message: 'Missing required fields' });
   }
 
-  const rowToUpdate = await findRowById(MARKET_SHEET_NAME, id);
+  const rowToUpdate = await findRowById(MARKET_SHEET_NAME as string, id);
   if (rowToUpdate === -1) throw new Error("Event not found");
 
   const incomeValue = income != null ? income : "";
@@ -63,13 +67,15 @@ async function handlePut(req: VercelRequest, res: VercelResponse) {
   const remDate = reminder?.date || "";
   const remTime = reminder?.time || "";
   const mLink = mapsLink || "";
+  const finalName = name || "";
+  const finalLocation = location || "";
 
   await sheets.spreadsheets.values.update({
     spreadsheetId: SPREADSHEET_ID,
     range: `${MARKET_SHEET_NAME}!A${rowToUpdate}:K${rowToUpdate}`,
     valueInputOption: 'USER_ENTERED',
     requestBody: {
-      values: [[id, name, location, date, participationCost, alreadyPaid, incomeValue, remMsg, remDate, remTime, mLink]],
+      values: [[id, finalName, finalLocation, date, participationCost, alreadyPaid, incomeValue, remMsg, remDate, remTime, mLink]],
     },
   });
 
@@ -80,6 +86,6 @@ async function handleDelete(req: VercelRequest, res: VercelResponse) {
   const { id } = req.body;
   if (!id) return res.status(400).json({ success: false, message: 'Missing ID' });
 
-  await deleteRowById(MARKET_SHEET_NAME, id);
+  await deleteRowById(MARKET_SHEET_NAME as string, id);
   return res.status(200).json({ success: true });
 }

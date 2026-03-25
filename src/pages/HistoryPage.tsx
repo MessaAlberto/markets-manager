@@ -46,7 +46,7 @@ const HistoryPage = ({ events, expenses, onDeleteEvent, onDeleteExpense, onEditE
     const evtExpenses = events
       .filter((e) => e.id && e.id.trim() !== "" && (e.participationCost || 0) > 0)
       .map(e => {
-        const locationName = e.location && e.location !== "(Nessun Luogo)" ? e.location : (e.name || "Mercatino");
+        const locationName = e.location?.trim() ? e.location : (e.name || "Mercatino");
         return {
           id: `evt-${e.id}`,
           title: `${t("subscription")}: ${locationName}`,
@@ -145,10 +145,12 @@ const HistoryPage = ({ events, expenses, onDeleteEvent, onDeleteExpense, onEditE
               >
                 <div className="flex justify-between items-center">
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-base truncate">{ev.name}</h3>
-                    <div className="flex items-center gap-1 text-muted-foreground text-sm mt-1">
-                      <MapPin size={14} /><span className="truncate">{ev.location}</span>
-                    </div>
+                    <h3 className="font-bold text-base truncate">{ev.name || ev.location}</h3>
+                    {ev.name && ev.location && (
+                      <div className="flex items-center gap-1 text-muted-foreground text-sm mt-1">
+                        <MapPin size={14} /><span className="truncate">{ev.location}</span>
+                      </div>
+                    )}
                     <div className="flex items-center gap-1 text-muted-foreground text-sm mt-0.5">
                       <Calendar size={14} /><span>{format(new Date(ev.date), "dd MMM yyyy")}</span>
                     </div>

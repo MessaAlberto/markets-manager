@@ -18,9 +18,6 @@ const CHART_COLOR = "hsl(210, 60%, 45%)";
 const INCOME_COLOR = "hsl(145, 50%, 42%)";
 const EXPENSE_COLOR = "hsl(15, 75%, 55%)";
 
-const EMPTY_LOCATION = "(Nessun Luogo)";
-const EMPTY_EVENT = "(Nessun Evento)";
-
 function filterByTime<T extends { date: string }>(items: T[], tf: TimeFilter, specific: string): T[] {
   const now = new Date();
   return items.filter(item => {
@@ -100,6 +97,9 @@ const StatisticsPage = ({ events, expenses }: Props) => {
   const [specificPeriod, setSpecificPeriod] = useState("");
   const { t } = useTranslation();
 
+  const emptyLocation = t("no_location");
+  const emptyEvent = t("no_event");
+
   const TIME_OPTIONS: { value: TimeFilter; label: string }[] = useMemo(() => [
     { value: "all", label: t("all_time") },
     { value: "1m", label: t("last_month") },
@@ -113,12 +113,12 @@ const StatisticsPage = ({ events, expenses }: Props) => {
   const pastEvents = events.filter(e => new Date(e.date) <= new Date());
 
   const locations = useMemo(() =>
-    [...new Set(pastEvents.map(e => (e.location && e.location.trim() !== "") ? e.location : EMPTY_LOCATION))].sort(),
-    [pastEvents]);
+    [...new Set(pastEvents.map(e => (e.location && e.location.trim() !== "") ? e.location : emptyLocation))].sort(),
+    [pastEvents, emptyLocation]);
 
   const eventNames = useMemo(() =>
-    [...new Set(pastEvents.map(e => (e.name && e.name.trim() !== "") ? e.name : EMPTY_EVENT))].sort(),
-    [pastEvents]);
+    [...new Set(pastEvents.map(e => (e.name && e.name.trim() !== "") ? e.name : emptyEvent))].sort(),
+    [pastEvents, emptyEvent]);
 
   const periods = useMemo(() => {
     const dates = mode === "markets" ? pastEvents.map(e => e.date) : expenses.map(e => e.date);
@@ -143,7 +143,7 @@ const StatisticsPage = ({ events, expenses }: Props) => {
     let data = filterByTime(pastEvents, timeFilter, effectivePeriod);
 
     if (locationFilter) {
-      if (locationFilter === EMPTY_LOCATION) {
+      if (locationFilter === emptyLocation) {
         data = data.filter(e => !e.location || e.location.trim() === "");
       } else {
         data = data.filter(e => e.location === locationFilter);
@@ -151,7 +151,7 @@ const StatisticsPage = ({ events, expenses }: Props) => {
     }
 
     if (eventFilter) {
-      if (eventFilter === EMPTY_EVENT) {
+      if (eventFilter === emptyEvent) {
         data = data.filter(e => !e.name || e.name.trim() === "");
       } else {
         data = data.filter(e => e.name === eventFilter);
@@ -159,7 +159,7 @@ const StatisticsPage = ({ events, expenses }: Props) => {
     }
 
     return data;
-  }, [pastEvents, timeFilter, effectivePeriod, locationFilter, eventFilter]);
+  }, [pastEvents, timeFilter, effectivePeriod, locationFilter, eventFilter, emptyLocation, emptyEvent]);
 
   const filteredExpenses = useMemo(
     () => filterByTime(expenses, timeFilter, effectivePeriod),
@@ -171,7 +171,7 @@ const StatisticsPage = ({ events, expenses }: Props) => {
     filteredEvents.forEach(e => {
       let k = e[key];
       if (!k || k.trim() === "") {
-        k = key === "location" ? EMPTY_LOCATION : EMPTY_EVENT;
+        k = key === "location" ? emptyLocation : emptyEvent;
       }
 
       const d = map.get(k) || { count: 0, totalIncome: 0, totalCost: 0 };
@@ -202,8 +202,8 @@ const StatisticsPage = ({ events, expenses }: Props) => {
     return sortChronologically(raw, "yyyy");
   }, [filteredEvents]);
 
-  const locationData = useMemo(() => buildGrouped("location"), [filteredEvents]);
-  const eventData = useMemo(() => buildGrouped("name"), [filteredEvents]);
+  const locationData = useMemo(() => buildGrouped("location"), [filteredEvents, emptyLocation, emptyEvent]);
+  const eventData = useMemo(() => buildGrouped("name"), [filteredEvents, emptyLocation, emptyEvent]);
 
   const expenseTimeDataByMonth = useMemo(() => {
     const raw = buildExpenseTimeMap(filteredExpenses, d => format(d, "MMM yy"));

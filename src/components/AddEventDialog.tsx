@@ -34,7 +34,7 @@ const AddEventDialog = ({ open, onClose, onAdd, editEvent }: Props) => {
   const { events } = useAppData();
 
   const existingEventNames = useMemo(() => {
-    const names = events.map(e => e.name).filter(n => n && n !== "(Nessun Evento)");
+    const names = events.map(e => e.name).filter(n => n && n.trim() !== "");
     return Array.from(new Set(names)).sort();
   }, [events]);
 
@@ -76,8 +76,8 @@ const AddEventDialog = ({ open, onClose, onAdd, editEvent }: Props) => {
 
   useEffect(() => {
     if (open && editEvent) {
-      setName(editEvent.name === "(Nessun Evento)" ? "" : editEvent.name);
-      setLocation(editEvent.location === "(Nessun Luogo)" ? "" : editEvent.location);
+      setName(editEvent.name || "");
+      setLocation(editEvent.location || "");
       setMapsLink(editEvent.mapsLink || "");
       setDate(editEvent.date);
       setCost(editEvent.participationCost.toString());
@@ -91,7 +91,15 @@ const AddEventDialog = ({ open, onClose, onAdd, editEvent }: Props) => {
   const handleSubmit = async () => {
     try {
       if (!date) {
-        toast.error("Please fill in Date", { duration: 2500 });
+        toast.error(t("missing_date"), { duration: 2500 });
+        return;
+      }
+
+      const finalName = name.trim();
+      const finalLocation = location.trim();
+
+      if (!finalName && !finalLocation) {
+        toast.error(t("name_or_location_required"), { duration: 2500 });
         return;
       }
 
@@ -100,9 +108,6 @@ const AddEventDialog = ({ open, onClose, onAdd, editEvent }: Props) => {
       const isEdit = !!editEvent;
       const method = isEdit ? "PUT" : "POST";
 
-      const finalName = name.trim() !== "" ? name.trim() : "(Nessun Evento)";
-      const finalLocation = location.trim() !== "" ? location.trim() : "(Nessun Luogo)";
-      
       const parsedCost = cost.trim() === "" ? 0 : parseFloat(cost) || 0;
       const finalPaid = parsedCost === 0 ? true : paid;
 
@@ -131,7 +136,7 @@ const AddEventDialog = ({ open, onClose, onAdd, editEvent }: Props) => {
       });
 
       if (response.status === 401) {
-        toast.error("Wrong or changed PIN. Please log in again.");
+        toast.error(t("wrong_pin"), { duration: 2500 });
         onClose();
         return;
       }
@@ -139,7 +144,7 @@ const AddEventDialog = ({ open, onClose, onAdd, editEvent }: Props) => {
       const data = await response.json();
 
       if (data.success) {
-        toast.success(isEdit ? "Event updated successfully!" : "Event added successfully!", { duration: 2500 });
+        toast.success(isEdit ? t("update_event_success") : t("add_event_success"), { duration: 2500 });
 
         const finalPayload = isEdit ? payload : { ...payload, id: data.id };
         onAdd(finalPayload);
@@ -147,11 +152,11 @@ const AddEventDialog = ({ open, onClose, onAdd, editEvent }: Props) => {
         resetForm();
         onClose();
       } else {
-        toast.error(data.message || "Failed to save event", { duration: 2500 });
+        toast.error(data.message || t("failed_save_event"), { duration: 2500 });
       }
     } catch (err) {
       console.error(err);
-      toast.error("Server error", { duration: 2500 });
+      toast.error(t("server_error"), { duration: 2500 });
     } finally {
       setSaving(false);
     }
@@ -171,25 +176,25 @@ const AddEventDialog = ({ open, onClose, onAdd, editEvent }: Props) => {
           <DialogTitle className="text-xl">{isEdit ? t("edit_market_event") : t("add_market_event")}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 mt-2">
-          
+
           <div className="relative">
             <Label className="text-base font-semibold">{t("event_name")} <span className="text-muted-foreground font-normal text-sm">{t("optional")}</span></Label>
             <div className="relative mt-1">
-              <Input 
-                disabled={saving} 
-                className="text-base h-12 w-full" 
-                value={name} 
+              <Input
+                disabled={saving}
+                className="text-base h-12 w-full"
+                value={name}
                 onChange={(e) => {
                   setName(e.target.value);
                   setShowEventNames(true);
-                }} 
+                }}
                 onFocus={() => setShowEventNames(true)}
                 onBlur={() => setTimeout(() => setShowEventNames(false), 200)}
-                placeholder={t("event_name_placeholder")} 
+                placeholder={t("event_name_placeholder")}
                 autoComplete="off"
               />
             </div>
-            
+
             {showEventNames && filteredEventNames.length > 0 && (
               <div className="absolute z-[100] w-full mt-1 bg-popover text-popover-foreground border border-border rounded-md shadow-md max-h-56 overflow-y-auto">
                 {filteredEventNames.map(n => (

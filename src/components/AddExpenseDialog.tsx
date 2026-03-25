@@ -42,7 +42,7 @@ const AddExpenseDialog = ({ open, onClose, onAdd, editExpense }: Props) => {
   const handleSubmit = async () => {
     try {
       if (!title || !cost) {
-        toast.error("Please fill in all required fields", { duration: 2500 });
+        toast.error(t("missing_fields"), { duration: 2500 });
         return;
       }
 
@@ -66,7 +66,7 @@ const AddExpenseDialog = ({ open, onClose, onAdd, editExpense }: Props) => {
       });
 
       if (response.status === 401) {
-        toast.error("Wrong or changed PIN. Please log in again.");
+        toast.error(t("wrong_pin"), { duration: 2500 });
         onClose();
         return;
       }
@@ -74,7 +74,7 @@ const AddExpenseDialog = ({ open, onClose, onAdd, editExpense }: Props) => {
       const data = await response.json();
 
       if (data.success) {
-        toast.success(editExpense ? "Expense updated successfully!" : "Expense added successfully!", { duration: 2500 });
+        toast.success(editExpense ? t("update_expense_success") : t("add_expense_success"), { duration: 2500 });
 
         const finalPayload = editExpense ? payload : { ...payload, id: data.id };
         onAdd(finalPayload);
@@ -82,11 +82,11 @@ const AddExpenseDialog = ({ open, onClose, onAdd, editExpense }: Props) => {
         resetForm();
         onClose();
       } else {
-        toast.error(data.message || "Failed to save expense", { duration: 2500 });
+        toast.error(data.message || t("failed_save_expense"), { duration: 2500 });
       }
     } catch (err) {
       console.error(err);
-      toast.error("Server error", { duration: 2500 });
+      toast.error(t("server_error"), { duration: 2500 });
     } finally {
       setSaving(false);
     }
