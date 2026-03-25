@@ -22,6 +22,7 @@ const RemindersPage = ({ events, onUpdateEvent, onDeleteEvent, onEditEvent }: Pr
   const [contextMenu, setContextMenu] = useState<{ open: boolean; id: string; pos: { x: number; y: number } }>({ open: false, id: "", pos: { x: 0, y: 0 } });
   const [incomeDialog, setIncomeDialog] = useState<{ open: boolean; id: string; name: string }>({ open: false, id: "", name: "" });
   const [reminderDialog, setReminderDialog] = useState<{ open: boolean; id: string }>({ open: false, id: "" });
+  const [paymentDialog, setPaymentDialog] = useState<{ open: boolean; id: string; name: string; cost: number }>({ open: false, id: "", name: "", cost: 0 });
   const [reminderForm, setReminderForm] = useState<Reminder>({ message: "", date: "", time: "" });
   const [saving, setSaving] = useState(false);
 
@@ -29,7 +30,7 @@ const RemindersPage = ({ events, onUpdateEvent, onDeleteEvent, onEditEvent }: Pr
     const eventDate = new Date(ev.date);
     const past = isPast(eventDate) && !isToday(eventDate);
     if (past) {
-      return !ev.income;
+      return ev.income == null;
     }
     return true;
   });
@@ -128,6 +129,57 @@ const RemindersPage = ({ events, onUpdateEvent, onDeleteEvent, onEditEvent }: Pr
     }
   };
 
+  const handleConfirmPayment = async () => {
+    const currentEvent = events.find(e => e.id === paymentDialog.id);
+    if (!currentEvent) return;
+
+    setSaving(true);
+
+    try {
+      const payload = {
+        id: currentEvent.id,
+        name: currentEvent.name,
+        location: currentEvent.location,
+        date: currentEvent.date,
+        participationCost: currentEvent.participationCost,
+        alreadyPaid: true,
+        income: currentEvent.income,
+        mapsLink: currentEvent.mapsLink,
+        reminder: currentEvent.reminder
+      };
+
+      const response = await fetch("/api/events", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-pin": localStorage.getItem("mercatini-pin") || ""
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.status === 401) {
+        toast.error("Wrong or changed PIN. Please log in again.");
+        setPaymentDialog({ open: false, id: "", name: "", cost: 0 });
+        return;
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success("Payment marked as paid!", { duration: 2500 });
+        onUpdateEvent(paymentDialog.id, { alreadyPaid: true });
+        setPaymentDialog({ open: false, id: "", name: "", cost: 0 });
+      } else {
+        toast.error(data.message || "Failed to confirm payment", { duration: 2500 });
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Server error", { duration: 2500 });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const contextEvent = events.find((e) => e.id === contextMenu.id);
 
   return (
@@ -183,9 +235,9 @@ const RemindersPage = ({ events, onUpdateEvent, onDeleteEvent, onEditEvent }: Pr
                             <button
                               onClick={() => {
                                 if (ev.mapsLink) {
-                                  window.open(ev.mapsLink, '_blank');
+                                  window.location.href = ev.mapsLink;
                                 } else {
-                                  window.open(`https://maps.google.com/?q=${encodeURIComponent(ev.location)}`, '_blank');
+                                  window.location.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ev.location)}`;
                                 }
                               }}
                               className="p-2 rounded-lg bg-muted active:scale-95 transition-transform"
@@ -218,10 +270,13 @@ const RemindersPage = ({ events, onUpdateEvent, onDeleteEvent, onEditEvent }: Pr
                         {missingPayment && (
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <div className="flex items-center gap-1 px-2 py-2 rounded-lg bg-expense/10">
+                              <button 
+                                onClick={() => setPaymentDialog({ open: true, id: ev.id, name: ev.name, cost: ev.participationCost })}
+                                className="flex items-center gap-1 px-2 py-2 rounded-lg bg-expense/10 active:scale-95 transition-transform"
+                              >
                                 <CreditCard size={16} className="text-expense" />
                                 <span className="text-expense font-bold text-xs">-€{ev.participationCost}</span>
-                              </div>
+                              </button>
                             </TooltipTrigger>
                             <TooltipContent>Missing payment: €{ev.participationCost}</TooltipContent>
                           </Tooltip>
@@ -276,6 +331,27 @@ const RemindersPage = ({ events, onUpdateEvent, onDeleteEvent, onEditEvent }: Pr
               <Button onClick={handleSaveReminder} disabled={saving} className="w-full h-12 text-base font-bold">
                 {saving && <Loader2 className="animate-spin mr-2" size={18} />}
                 {saving ? "Saving..." : "Save Reminder"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={paymentDialog.open} onOpenChange={(o) => !o && !saving && setPaymentDialog({ open: false, id: "", name: "", cost: 0 })}>
+          <DialogContent
+            className="max-w-[90vw] rounded-2xl"
+            onInteractOutside={(e) => saving && e.preventDefault()}
+            onEscapeKeyDown={(e) => saving && e.preventDefault()}
+          >
+            <DialogHeader>
+              <DialogTitle className="text-xl">Confirm Payment</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 mt-2">
+              <p className="text-muted-foreground text-sm">
+                Have you completed the payment of <strong>€{paymentDialog.cost}</strong> for <strong>{paymentDialog.name}</strong>?
+              </p>
+              <Button onClick={handleConfirmPayment} disabled={saving} className="w-full h-12 text-base font-bold">
+                {saving && <Loader2 className="animate-spin mr-2" size={18} />}
+                {saving ? "Confirming..." : "Yes, mark as paid"}
               </Button>
             </div>
           </DialogContent>

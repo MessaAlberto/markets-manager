@@ -58,9 +58,8 @@ function sortChronologically(data: { name: string;[k: string]: any }[], keyForma
   });
 }
 
-function buildTimeMap<T extends { date: string }>(
-  items: T[],
-  getVal: (item: T) => number,
+function buildExpenseTimeMap(
+  items: Expense[],
   keyFn: (d: Date) => string
 ) {
   const map = new Map<string, { count: number; total: number }>();
@@ -68,7 +67,7 @@ function buildTimeMap<T extends { date: string }>(
     const k = keyFn(new Date(item.date));
     const d = map.get(k) || { count: 0, total: 0 };
     d.count++;
-    d.total += getVal(item);
+    d.total += item.cost;
     map.set(k, d);
   });
   return [...map.entries()].map(([name, d]) => ({
@@ -76,6 +75,29 @@ function buildTimeMap<T extends { date: string }>(
     count: d.count,
     total: d.total,
     avg: d.count > 0 ? Math.round(d.total / d.count) : 0,
+  }));
+}
+
+function buildMarketTimeMap(
+  items: MarketEvent[],
+  keyFn: (d: Date) => string
+) {
+  const map = new Map<string, { count: number; totalIncome: number; totalCost: number }>();
+  items.forEach(item => {
+    const k = keyFn(new Date(item.date));
+    const d = map.get(k) || { count: 0, totalIncome: 0, totalCost: 0 };
+    d.count++;
+    d.totalIncome += item.income || 0;
+    d.totalCost += item.participationCost || 0;
+    map.set(k, d);
+  });
+  return [...map.entries()].map(([name, d]) => ({
+    name,
+    count: d.count,
+    totalIncome: d.totalIncome,
+    avgIncome: d.count > 0 ? Math.round(d.totalIncome / d.count) : 0,
+    totalCost: d.totalCost,
+    avgCost: d.count > 0 ? Math.round(d.totalCost / d.count) : 0,
   }));
 }
 
@@ -143,16 +165,17 @@ const StatisticsPage = ({ events, expenses }: Props) => {
   );
 
   const buildGrouped = (key: "location" | "name") => {
-    const map = new Map<string, { count: number; totalIncome: number }>();
+    const map = new Map<string, { count: number; totalIncome: number; totalCost: number }>();
     filteredEvents.forEach(e => {
       let k = e[key];
       if (!k || k.trim() === "") {
         k = key === "location" ? EMPTY_LOCATION : EMPTY_EVENT;
       }
 
-      const d = map.get(k) || { count: 0, totalIncome: 0 };
+      const d = map.get(k) || { count: 0, totalIncome: 0, totalCost: 0 };
       d.count++;
       d.totalIncome += e.income || 0;
+      d.totalCost += e.participationCost || 0;
       map.set(k, d);
     });
     return [...map.entries()].map(([name, d]) => ({
@@ -160,18 +183,20 @@ const StatisticsPage = ({ events, expenses }: Props) => {
       count: d.count,
       totalIncome: d.totalIncome,
       avgIncome: d.count > 0 ? Math.round(d.totalIncome / d.count) : 0,
+      totalCost: d.totalCost,
+      avgCost: d.count > 0 ? Math.round(d.totalCost / d.count) : 0,
     }));
   };
 
   const useYearOnly = timeFilter === "5y" || timeFilter === "all";
 
   const marketTimeDataByMonth = useMemo(() => {
-    const raw = buildTimeMap(filteredEvents, e => e.income || 0, d => format(d, "MMM yy"));
+    const raw = buildMarketTimeMap(filteredEvents, d => format(d, "MMM yy"));
     return sortChronologically(raw, "MMM yy");
   }, [filteredEvents]);
 
   const marketTimeDataByYear = useMemo(() => {
-    const raw = buildTimeMap(filteredEvents, e => e.income || 0, d => format(d, "yyyy"));
+    const raw = buildMarketTimeMap(filteredEvents, d => format(d, "yyyy"));
     return sortChronologically(raw, "yyyy");
   }, [filteredEvents]);
 
@@ -179,12 +204,12 @@ const StatisticsPage = ({ events, expenses }: Props) => {
   const eventData = useMemo(() => buildGrouped("name"), [filteredEvents]);
 
   const expenseTimeDataByMonth = useMemo(() => {
-    const raw = buildTimeMap(filteredExpenses, e => e.cost, d => format(d, "MMM yy"));
+    const raw = buildExpenseTimeMap(filteredExpenses, d => format(d, "MMM yy"));
     return sortChronologically(raw, "MMM yy");
   }, [filteredExpenses]);
 
   const expenseTimeDataByYear = useMemo(() => {
-    const raw = buildTimeMap(filteredExpenses, e => e.cost, d => format(d, "yyyy"));
+    const raw = buildExpenseTimeMap(filteredExpenses, d => format(d, "yyyy"));
     return sortChronologically(raw, "yyyy");
   }, [filteredExpenses]);
 
@@ -195,7 +220,6 @@ const StatisticsPage = ({ events, expenses }: Props) => {
         <p className="text-muted-foreground text-center py-6 text-sm">No data</p>
       ) : (
         <div className="flex items-start h-[220px] w-full overflow-hidden">
-
           <div className="w-[40px] shrink-0 bg-card h-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 5, right: 0, bottom: 5, left: 0 }}>
@@ -205,7 +229,6 @@ const StatisticsPage = ({ events, expenses }: Props) => {
               </BarChart>
             </ResponsiveContainer>
           </div>
-
           <div className="flex-1 overflow-x-auto h-full border-l border-border/50">
             <div style={{ minWidth: chartData.length > 5 ? `${chartData.length * 28}px` : '100%', height: '100%' }}>
               <ResponsiveContainer width="100%" height="100%">
@@ -232,7 +255,6 @@ const StatisticsPage = ({ events, expenses }: Props) => {
               </ResponsiveContainer>
             </div>
           </div>
-
         </div>
       )}
     </div>
@@ -248,14 +270,18 @@ const StatisticsPage = ({ events, expenses }: Props) => {
           <h2 className="font-bold text-base mb-3 text-muted-foreground">By Year</h2>
           <div className="space-y-4 mb-6">
             <ChartCard title="Count of Markets" dataKey="count" color={CHART_COLOR} data={marketTimeDataByYear} />
-            <ChartCard title="Total Income" dataKey="total" color={INCOME_COLOR} data={marketTimeDataByYear} />
-            <ChartCard title="Average Income" dataKey="avg" color={INCOME_COLOR} data={marketTimeDataByYear} />
+            <ChartCard title="Total Income" dataKey="totalIncome" color={INCOME_COLOR} data={marketTimeDataByYear} />
+            <ChartCard title="Average Income" dataKey="avgIncome" color={INCOME_COLOR} data={marketTimeDataByYear} />
+            <ChartCard title="Total Cost" dataKey="totalCost" color={EXPENSE_COLOR} data={marketTimeDataByYear} />
+            <ChartCard title="Average Cost" dataKey="avgCost" color={EXPENSE_COLOR} data={marketTimeDataByYear} />
           </div>
           <h2 className="font-bold text-base mb-3 text-muted-foreground">By Month</h2>
           <div className="space-y-4">
             <ChartCard title="Count of Markets" dataKey="count" color={CHART_COLOR} data={marketTimeDataByMonth} />
-            <ChartCard title="Total Income" dataKey="total" color={INCOME_COLOR} data={marketTimeDataByMonth} />
-            <ChartCard title="Average Income" dataKey="avg" color={INCOME_COLOR} data={marketTimeDataByMonth} />
+            <ChartCard title="Total Income" dataKey="totalIncome" color={INCOME_COLOR} data={marketTimeDataByMonth} />
+            <ChartCard title="Average Income" dataKey="avgIncome" color={INCOME_COLOR} data={marketTimeDataByMonth} />
+            <ChartCard title="Total Cost" dataKey="totalCost" color={EXPENSE_COLOR} data={marketTimeDataByMonth} />
+            <ChartCard title="Average Cost" dataKey="avgCost" color={EXPENSE_COLOR} data={marketTimeDataByMonth} />
           </div>
         </>
       );
@@ -267,8 +293,10 @@ const StatisticsPage = ({ events, expenses }: Props) => {
         <h2 className="font-bold text-base mb-3 text-muted-foreground">By Time</h2>
         <div className="space-y-4">
           <ChartCard title="Count of Markets" dataKey="count" color={CHART_COLOR} data={data} />
-          <ChartCard title="Total Income" dataKey="total" color={INCOME_COLOR} data={data} />
-          <ChartCard title="Average Income" dataKey="avg" color={INCOME_COLOR} data={data} />
+          <ChartCard title="Total Income" dataKey="totalIncome" color={INCOME_COLOR} data={data} />
+          <ChartCard title="Average Income" dataKey="avgIncome" color={INCOME_COLOR} data={data} />
+          <ChartCard title="Total Cost" dataKey="totalCost" color={EXPENSE_COLOR} data={data} />
+          <ChartCard title="Average Cost" dataKey="avgCost" color={EXPENSE_COLOR} data={data} />
         </div>
       </>
     );
@@ -308,7 +336,6 @@ const StatisticsPage = ({ events, expenses }: Props) => {
     <div className="px-4 pt-2 pb-4">
       <h1 className="text-2xl font-extrabold mb-4">Statistics</h1>
 
-      {/* Mode Toggle */}
       <div className="flex gap-2 mb-4">
         <button
           onClick={() => { setMode("markets"); setTimeFilter("all"); setSpecificPeriod(""); }}
@@ -326,7 +353,6 @@ const StatisticsPage = ({ events, expenses }: Props) => {
         </button>
       </div>
 
-      {/* Filters */}
       <div className="space-y-3 mb-5">
         {mode === "markets" && (
           <>
@@ -378,7 +404,6 @@ const StatisticsPage = ({ events, expenses }: Props) => {
         )}
       </div>
 
-      {/* Charts */}
       {mode === "markets" ? (
         <div className="space-y-6">
           <div>{renderMarketTimeCharts()}</div>
@@ -390,6 +415,8 @@ const StatisticsPage = ({ events, expenses }: Props) => {
                 <ChartCard title="Count of Markets" dataKey="count" color={CHART_COLOR} data={locationData} />
                 <ChartCard title="Total Income" dataKey="totalIncome" color={INCOME_COLOR} data={locationData} />
                 <ChartCard title="Average Income" dataKey="avgIncome" color={INCOME_COLOR} data={locationData} />
+                <ChartCard title="Total Cost" dataKey="totalCost" color={EXPENSE_COLOR} data={locationData} />
+                <ChartCard title="Average Cost" dataKey="avgCost" color={EXPENSE_COLOR} data={locationData} />
               </div>
             </div>
           )}
@@ -401,6 +428,8 @@ const StatisticsPage = ({ events, expenses }: Props) => {
                 <ChartCard title="Count of Markets" dataKey="count" color={CHART_COLOR} data={eventData} />
                 <ChartCard title="Total Income" dataKey="totalIncome" color={INCOME_COLOR} data={eventData} />
                 <ChartCard title="Average Income" dataKey="avgIncome" color={INCOME_COLOR} data={eventData} />
+                <ChartCard title="Total Cost" dataKey="totalCost" color={EXPENSE_COLOR} data={eventData} />
+                <ChartCard title="Average Cost" dataKey="avgCost" color={EXPENSE_COLOR} data={eventData} />
               </div>
             </div>
           )}

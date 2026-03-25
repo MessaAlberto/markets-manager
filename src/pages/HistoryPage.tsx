@@ -37,8 +37,24 @@ const HistoryPage = ({ events, expenses, onDeleteEvent, onDeleteExpense, onEditE
   }, [events, sort]);
 
   const sortedExpenses = useMemo(() => {
-    return expenses
+    const stdExpenses = expenses
       .filter((e) => e.id && e.id.trim() !== "")
+      .map(e => ({ ...e, isEvent: false }));
+
+    const evtExpenses = events
+      .filter((e) => e.id && e.id.trim() !== "" && (e.participationCost || 0) > 0)
+      .map(e => {
+        const locationName = e.location && e.location !== "(Nessun Luogo)" ? e.location : (e.name || "Mercatino");
+        return {
+          id: `evt-${e.id}`,
+          title: `Subscription: ${locationName}`,
+          date: e.date,
+          cost: e.participationCost,
+          isEvent: true
+        };
+      });
+
+    return [...stdExpenses, ...evtExpenses]
       .sort((a, b) => {
         switch (sort) {
           case "date-desc": return new Date(b.date).getTime() - new Date(a.date).getTime();
@@ -48,7 +64,7 @@ const HistoryPage = ({ events, expenses, onDeleteEvent, onDeleteExpense, onEditE
           default: return 0;
         }
       });
-  }, [expenses, sort]);
+  }, [expenses, events, sort]);
 
   const handleLongPress = (id: string, e: React.TouchEvent | React.MouseEvent) => {
     e.preventDefault();
@@ -62,8 +78,14 @@ const HistoryPage = ({ events, expenses, onDeleteEvent, onDeleteExpense, onEditE
       const event = events.find(e => e.id === contextMenu.id);
       if (event) onEditEvent(event);
     } else {
-      const expense = expenses.find(e => e.id === contextMenu.id);
-      if (expense) onEditExpense(expense);
+      if (contextMenu.id.startsWith("evt-")) {
+        const realId = contextMenu.id.replace("evt-", "");
+        const event = events.find(e => e.id === realId);
+        if (event) onEditEvent(event);
+      } else {
+        const expense = expenses.find(e => e.id === contextMenu.id);
+        if (expense) onEditExpense(expense);
+      }
     }
   };
 
@@ -158,7 +180,8 @@ const HistoryPage = ({ events, expenses, onDeleteEvent, onDeleteExpense, onEditE
                   <div className="flex-1 min-w-0">
                     <h3 className="font-bold text-base truncate">{ex.title}</h3>
                     <div className="flex items-center gap-1 text-muted-foreground text-sm mt-1">
-                      <Calendar size={14} /><span>{format(new Date(ex.date), "dd MMM yyyy")}</span>
+                      {ex.isEvent ? <MapPin size={14} /> : <Calendar size={14} />}
+                      <span>{format(new Date(ex.date), "dd MMM yyyy")}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-1 ml-2 shrink-0">
@@ -176,8 +199,16 @@ const HistoryPage = ({ events, expenses, onDeleteEvent, onDeleteExpense, onEditE
         onClose={() => setContextMenu((c) => ({ ...c, open: false }))}
         onEdit={handleEdit}
         onDelete={() => {
-          if (view === "events") return onDeleteEvent(contextMenu.id);
-          else return onDeleteExpense(contextMenu.id);
+          if (view === "events") {
+            return onDeleteEvent(contextMenu.id);
+          } else {
+            // Seleziona il delete giusto tra eventi e spese
+            if (contextMenu.id.startsWith("evt-")) {
+              const realId = contextMenu.id.replace("evt-", "");
+              return onDeleteEvent(realId);
+            }
+            return onDeleteExpense(contextMenu.id);
+          }
         }}
         position={contextMenu.pos}
       />
