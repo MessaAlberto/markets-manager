@@ -4,6 +4,7 @@ import { format, subMonths, subYears, parse } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import WheelPicker from "@/components/WheelPicker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   events: MarketEvent[];
@@ -12,16 +13,6 @@ interface Props {
 
 type Mode = "markets" | "expenses";
 type TimeFilter = "all" | "1m" | "5m" | "1y" | "5y" | "month" | "year";
-
-const TIME_OPTIONS: { value: TimeFilter; label: string }[] = [
-  { value: "all", label: "All time" },
-  { value: "1m", label: "Last month" },
-  { value: "5m", label: "Last 5 months" },
-  { value: "1y", label: "Last year" },
-  { value: "5y", label: "Last 5 years" },
-  { value: "month", label: "Specific month" },
-  { value: "year", label: "Specific year" },
-];
 
 const CHART_COLOR = "hsl(210, 60%, 45%)";
 const INCOME_COLOR = "hsl(145, 50%, 42%)";
@@ -107,6 +98,17 @@ const StatisticsPage = ({ events, expenses }: Props) => {
   const [eventFilter, setEventFilter] = useState("");
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
   const [specificPeriod, setSpecificPeriod] = useState("");
+  const { t } = useTranslation();
+
+  const TIME_OPTIONS: { value: TimeFilter; label: string }[] = useMemo(() => [
+    { value: "all", label: t("all_time") },
+    { value: "1m", label: t("last_month") },
+    { value: "5m", label: t("last_5_months") },
+    { value: "1y", label: t("last_year") },
+    { value: "5y", label: t("last_5_years") },
+    { value: "month", label: t("specific_month") },
+    { value: "year", label: t("specific_year") },
+  ], [t]);
 
   const pastEvents = events.filter(e => new Date(e.date) <= new Date());
 
@@ -217,7 +219,7 @@ const StatisticsPage = ({ events, expenses }: Props) => {
     <div className="bg-card rounded-xl p-2 border border-border shadow-sm">
       <h3 className="font-bold text-sm mb-1 ml-1">{title}</h3>
       {chartData.length === 0 ? (
-        <p className="text-muted-foreground text-center py-6 text-sm">No data</p>
+        <p className="text-muted-foreground text-center py-6 text-sm">{t("no_data")}</p>
       ) : (
         <div className="flex items-start h-[220px] w-full overflow-hidden">
           <div className="w-[40px] shrink-0 bg-card h-full">
@@ -267,21 +269,21 @@ const StatisticsPage = ({ events, expenses }: Props) => {
     if (timeFilter === "all") {
       return (
         <>
-          <h2 className="font-bold text-base mb-3 text-muted-foreground">By Year</h2>
+          <h2 className="font-bold text-base mb-3 text-muted-foreground">{t("by_year")}</h2>
           <div className="space-y-4 mb-6">
-            <ChartCard title="Count of Markets" dataKey="count" color={CHART_COLOR} data={marketTimeDataByYear} />
-            <ChartCard title="Total Income" dataKey="totalIncome" color={INCOME_COLOR} data={marketTimeDataByYear} />
-            <ChartCard title="Average Income" dataKey="avgIncome" color={INCOME_COLOR} data={marketTimeDataByYear} />
-            <ChartCard title="Total Cost" dataKey="totalCost" color={EXPENSE_COLOR} data={marketTimeDataByYear} />
-            <ChartCard title="Average Cost" dataKey="avgCost" color={EXPENSE_COLOR} data={marketTimeDataByYear} />
+            <ChartCard title={t("count_markets")} dataKey="count" color={CHART_COLOR} data={marketTimeDataByYear} />
+            <ChartCard title={t("total_income")} dataKey="totalIncome" color={INCOME_COLOR} data={marketTimeDataByYear} />
+            <ChartCard title={t("avg_income")} dataKey="avgIncome" color={INCOME_COLOR} data={marketTimeDataByYear} />
+            <ChartCard title={t("total_cost")} dataKey="totalCost" color={EXPENSE_COLOR} data={marketTimeDataByYear} />
+            <ChartCard title={t("avg_cost")} dataKey="avgCost" color={EXPENSE_COLOR} data={marketTimeDataByYear} />
           </div>
-          <h2 className="font-bold text-base mb-3 text-muted-foreground">By Month</h2>
+          <h2 className="font-bold text-base mb-3 text-muted-foreground">{t("by_month")}</h2>
           <div className="space-y-4">
-            <ChartCard title="Count of Markets" dataKey="count" color={CHART_COLOR} data={marketTimeDataByMonth} />
-            <ChartCard title="Total Income" dataKey="totalIncome" color={INCOME_COLOR} data={marketTimeDataByMonth} />
-            <ChartCard title="Average Income" dataKey="avgIncome" color={INCOME_COLOR} data={marketTimeDataByMonth} />
-            <ChartCard title="Total Cost" dataKey="totalCost" color={EXPENSE_COLOR} data={marketTimeDataByMonth} />
-            <ChartCard title="Average Cost" dataKey="avgCost" color={EXPENSE_COLOR} data={marketTimeDataByMonth} />
+            <ChartCard title={t("count_markets")} dataKey="count" color={CHART_COLOR} data={marketTimeDataByMonth} />
+            <ChartCard title={t("total_income")} dataKey="totalIncome" color={INCOME_COLOR} data={marketTimeDataByMonth} />
+            <ChartCard title={t("avg_income")} dataKey="avgIncome" color={INCOME_COLOR} data={marketTimeDataByMonth} />
+            <ChartCard title={t("total_cost")} dataKey="totalCost" color={EXPENSE_COLOR} data={marketTimeDataByMonth} />
+            <ChartCard title={t("avg_cost")} dataKey="avgCost" color={EXPENSE_COLOR} data={marketTimeDataByMonth} />
           </div>
         </>
       );
@@ -290,13 +292,13 @@ const StatisticsPage = ({ events, expenses }: Props) => {
     const data = useYearOnly ? marketTimeDataByYear : marketTimeDataByMonth;
     return (
       <>
-        <h2 className="font-bold text-base mb-3 text-muted-foreground">By Time</h2>
+        <h2 className="font-bold text-base mb-3 text-muted-foreground">{t("by_time")}</h2>
         <div className="space-y-4">
-          <ChartCard title="Count of Markets" dataKey="count" color={CHART_COLOR} data={data} />
-          <ChartCard title="Total Income" dataKey="totalIncome" color={INCOME_COLOR} data={data} />
-          <ChartCard title="Average Income" dataKey="avgIncome" color={INCOME_COLOR} data={data} />
-          <ChartCard title="Total Cost" dataKey="totalCost" color={EXPENSE_COLOR} data={data} />
-          <ChartCard title="Average Cost" dataKey="avgCost" color={EXPENSE_COLOR} data={data} />
+          <ChartCard title={t("count_markets")} dataKey="count" color={CHART_COLOR} data={data} />
+          <ChartCard title={t("total_income")} dataKey="totalIncome" color={INCOME_COLOR} data={data} />
+          <ChartCard title={t("avg_income")} dataKey="avgIncome" color={INCOME_COLOR} data={data} />
+          <ChartCard title={t("total_cost")} dataKey="totalCost" color={EXPENSE_COLOR} data={data} />
+          <ChartCard title={t("avg_cost")} dataKey="avgCost" color={EXPENSE_COLOR} data={data} />
         </div>
       </>
     );
@@ -306,17 +308,17 @@ const StatisticsPage = ({ events, expenses }: Props) => {
     if (timeFilter === "all") {
       return (
         <>
-          <h2 className="font-bold text-base mb-3 text-muted-foreground">By Year</h2>
+          <h2 className="font-bold text-base mb-3 text-muted-foreground">{t("by_year")}</h2>
           <div className="space-y-4 mb-6">
-            <ChartCard title="Count of Expenses" dataKey="count" color={CHART_COLOR} data={expenseTimeDataByYear} />
-            <ChartCard title="Total Cost" dataKey="total" color={EXPENSE_COLOR} data={expenseTimeDataByYear} />
-            <ChartCard title="Average Cost" dataKey="avg" color={EXPENSE_COLOR} data={expenseTimeDataByYear} />
+            <ChartCard title={t("count_expenses")} dataKey="count" color={CHART_COLOR} data={expenseTimeDataByYear} />
+            <ChartCard title={t("total_cost")} dataKey="total" color={EXPENSE_COLOR} data={expenseTimeDataByYear} />
+            <ChartCard title={t("avg_cost")} dataKey="avg" color={EXPENSE_COLOR} data={expenseTimeDataByYear} />
           </div>
-          <h2 className="font-bold text-base mb-3 text-muted-foreground">By Month</h2>
+          <h2 className="font-bold text-base mb-3 text-muted-foreground">{t("by_month")}</h2>
           <div className="space-y-4">
-            <ChartCard title="Count of Expenses" dataKey="count" color={CHART_COLOR} data={expenseTimeDataByMonth} />
-            <ChartCard title="Total Cost" dataKey="total" color={EXPENSE_COLOR} data={expenseTimeDataByMonth} />
-            <ChartCard title="Average Cost" dataKey="avg" color={EXPENSE_COLOR} data={expenseTimeDataByMonth} />
+            <ChartCard title={t("count_expenses")} dataKey="count" color={CHART_COLOR} data={expenseTimeDataByMonth} />
+            <ChartCard title={t("total_cost")} dataKey="total" color={EXPENSE_COLOR} data={expenseTimeDataByMonth} />
+            <ChartCard title={t("avg_cost")} dataKey="avg" color={EXPENSE_COLOR} data={expenseTimeDataByMonth} />
           </div>
         </>
       );
@@ -325,16 +327,16 @@ const StatisticsPage = ({ events, expenses }: Props) => {
     const data = useYearOnly ? expenseTimeDataByYear : expenseTimeDataByMonth;
     return (
       <div className="space-y-4">
-        <ChartCard title="Count of Expenses" dataKey="count" color={CHART_COLOR} data={data} />
-        <ChartCard title="Total Cost" dataKey="total" color={EXPENSE_COLOR} data={data} />
-        <ChartCard title="Average Cost" dataKey="avg" color={EXPENSE_COLOR} data={data} />
+        <ChartCard title={t("count_expenses")} dataKey="count" color={CHART_COLOR} data={data} />
+        <ChartCard title={t("total_cost")} dataKey="total" color={EXPENSE_COLOR} data={data} />
+        <ChartCard title={t("avg_cost")} dataKey="avg" color={EXPENSE_COLOR} data={data} />
       </div>
     );
   };
 
   return (
     <div className="px-4 pt-2 pb-4">
-      <h1 className="text-2xl font-extrabold mb-4">Statistics</h1>
+      <h1 className="text-2xl font-extrabold mb-4">{t("statistics_title")}</h1>
 
       <div className="flex gap-2 mb-4">
         <button
@@ -342,14 +344,14 @@ const StatisticsPage = ({ events, expenses }: Props) => {
           className={`flex-1 py-2.5 rounded-full text-sm font-bold transition-colors ${mode === "markets" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
             }`}
         >
-          Markets
+          {t("markets")}
         </button>
         <button
           onClick={() => { setMode("expenses"); setTimeFilter("all"); setSpecificPeriod(""); }}
           className={`flex-1 py-2.5 rounded-full text-sm font-bold transition-colors ${mode === "expenses" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
             }`}
         >
-          Expenses
+          {t("expenses")}
         </button>
       </div>
 
@@ -357,25 +359,25 @@ const StatisticsPage = ({ events, expenses }: Props) => {
         {mode === "markets" && (
           <>
             <div>
-              <span className="text-xs font-semibold text-muted-foreground mb-1 block">Location:</span>
+              <span className="text-xs font-semibold text-muted-foreground mb-1 block">{t("location_filter")}</span>
               <Select value={locationFilter || "__all__"} onValueChange={v => setLocationFilter(v === "__all__" ? "" : v)}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="All Locations" />
+                  <SelectValue placeholder={t("all_locations")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="__all__">All Locations</SelectItem>
+                  <SelectItem value="__all__">{t("all_locations")}</SelectItem>
                   {locations.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <span className="text-xs font-semibold text-muted-foreground mb-1 block">Event:</span>
+              <span className="text-xs font-semibold text-muted-foreground mb-1 block">{t("event_filter")}</span>
               <Select value={eventFilter || "__all__"} onValueChange={v => setEventFilter(v === "__all__" ? "" : v)}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="All Events" />
+                  <SelectValue placeholder={t("all_events")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="__all__">All Events</SelectItem>
+                  <SelectItem value="__all__">{t("all_events")}</SelectItem>
                   {eventNames.map(n => <SelectItem key={n} value={n}>{n}</SelectItem>)}
                 </SelectContent>
               </Select>
@@ -384,7 +386,7 @@ const StatisticsPage = ({ events, expenses }: Props) => {
         )}
 
         <div>
-          <span className="text-xs font-semibold text-muted-foreground mb-1 block">Time:</span>
+          <span className="text-xs font-semibold text-muted-foreground mb-1 block">{t("time_filter")}</span>
           <Select value={timeFilter} onValueChange={(v) => { setTimeFilter(v as TimeFilter); setSpecificPeriod(""); }}>
             <SelectTrigger className="w-full">
               <SelectValue />
@@ -410,26 +412,26 @@ const StatisticsPage = ({ events, expenses }: Props) => {
 
           {showLocationCharts && (
             <div>
-              <h2 className="font-bold text-base mb-3 text-muted-foreground">By Location</h2>
+              <h2 className="font-bold text-base mb-3 text-muted-foreground">{t("by_location")}</h2>
               <div className="space-y-4">
-                <ChartCard title="Count of Markets" dataKey="count" color={CHART_COLOR} data={locationData} />
-                <ChartCard title="Total Income" dataKey="totalIncome" color={INCOME_COLOR} data={locationData} />
-                <ChartCard title="Average Income" dataKey="avgIncome" color={INCOME_COLOR} data={locationData} />
-                <ChartCard title="Total Cost" dataKey="totalCost" color={EXPENSE_COLOR} data={locationData} />
-                <ChartCard title="Average Cost" dataKey="avgCost" color={EXPENSE_COLOR} data={locationData} />
+                <ChartCard title={t("count_markets")} dataKey="count" color={CHART_COLOR} data={locationData} />
+                <ChartCard title={t("total_income")} dataKey="totalIncome" color={INCOME_COLOR} data={locationData} />
+                <ChartCard title={t("avg_income")} dataKey="avgIncome" color={INCOME_COLOR} data={locationData} />
+                <ChartCard title={t("total_cost")} dataKey="totalCost" color={EXPENSE_COLOR} data={locationData} />
+                <ChartCard title={t("avg_cost")} dataKey="avgCost" color={EXPENSE_COLOR} data={locationData} />
               </div>
             </div>
           )}
 
           {showEventCharts && (
             <div>
-              <h2 className="font-bold text-base mb-3 text-muted-foreground">By Event</h2>
+              <h2 className="font-bold text-base mb-3 text-muted-foreground">{t("by_event")}</h2>
               <div className="space-y-4">
-                <ChartCard title="Count of Markets" dataKey="count" color={CHART_COLOR} data={eventData} />
-                <ChartCard title="Total Income" dataKey="totalIncome" color={INCOME_COLOR} data={eventData} />
-                <ChartCard title="Average Income" dataKey="avgIncome" color={INCOME_COLOR} data={eventData} />
-                <ChartCard title="Total Cost" dataKey="totalCost" color={EXPENSE_COLOR} data={eventData} />
-                <ChartCard title="Average Cost" dataKey="avgCost" color={EXPENSE_COLOR} data={eventData} />
+                <ChartCard title={t("count_markets")} dataKey="count" color={CHART_COLOR} data={eventData} />
+                <ChartCard title={t("total_income")} dataKey="totalIncome" color={INCOME_COLOR} data={eventData} />
+                <ChartCard title={t("avg_income")} dataKey="avgIncome" color={INCOME_COLOR} data={eventData} />
+                <ChartCard title={t("total_cost")} dataKey="totalCost" color={EXPENSE_COLOR} data={eventData} />
+                <ChartCard title={t("avg_cost")} dataKey="avgCost" color={EXPENSE_COLOR} data={eventData} />
               </div>
             </div>
           )}

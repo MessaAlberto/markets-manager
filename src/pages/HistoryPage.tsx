@@ -4,6 +4,7 @@ import { MarketEvent, Expense } from "@/lib/store";
 import EventContextMenu from "@/components/EventContextMenu";
 import { format, isPast } from "date-fns";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   events: MarketEvent[];
@@ -21,6 +22,7 @@ const HistoryPage = ({ events, expenses, onDeleteEvent, onDeleteExpense, onEditE
   const [view, setView] = useState<ViewType>("events");
   const [sort, setSort] = useState<SortType>("date-desc");
   const [contextMenu, setContextMenu] = useState<{ open: boolean; id: string; pos: { x: number; y: number } }>({ open: false, id: "", pos: { x: 0, y: 0 } });
+  const { t } = useTranslation();
 
   const pastEvents = useMemo(() => {
     return events
@@ -47,7 +49,7 @@ const HistoryPage = ({ events, expenses, onDeleteEvent, onDeleteExpense, onEditE
         const locationName = e.location && e.location !== "(Nessun Luogo)" ? e.location : (e.name || "Mercatino");
         return {
           id: `evt-${e.id}`,
-          title: `Subscription: ${locationName}`,
+          title: `${t("subscription")}: ${locationName}`,
           date: e.date,
           cost: e.participationCost,
           isEvent: true
@@ -64,7 +66,7 @@ const HistoryPage = ({ events, expenses, onDeleteEvent, onDeleteExpense, onEditE
           default: return 0;
         }
       });
-  }, [expenses, events, sort]);
+  }, [expenses, events, sort, t]);
 
   const handleLongPress = (id: string, e: React.TouchEvent | React.MouseEvent) => {
     e.preventDefault();
@@ -91,7 +93,7 @@ const HistoryPage = ({ events, expenses, onDeleteEvent, onDeleteExpense, onEditE
 
   return (
     <div className="px-4 pt-2 pb-4">
-      <h1 className="text-2xl font-extrabold mb-4">History</h1>
+      <h1 className="text-2xl font-extrabold mb-4">{t("history_title")}</h1>
 
       <div className="flex gap-2 mb-3">
         <button
@@ -99,28 +101,28 @@ const HistoryPage = ({ events, expenses, onDeleteEvent, onDeleteExpense, onEditE
           className={`flex-1 py-2.5 rounded-full text-sm font-bold transition-colors ${view === "events" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
             }`}
         >
-          Market Events
+          {t("market_events")}
         </button>
         <button
           onClick={() => setView("expenses")}
           className={`flex-1 py-2.5 rounded-full text-sm font-bold transition-colors ${view === "expenses" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
             }`}
         >
-          Expenses
+          {t("expenses")}
         </button>
       </div>
 
       <div className="mb-4">
-        <span className="text-xs font-semibold text-muted-foreground mb-1 block">Sort by:</span>
+        <span className="text-xs font-semibold text-muted-foreground mb-1 block">{t("sort_by")}</span>
         <Select value={sort} onValueChange={(v) => setSort(v as SortType)}>
           <SelectTrigger className="w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="date-desc">Newest first</SelectItem>
-            <SelectItem value="date-asc">Oldest first</SelectItem>
-            <SelectItem value="cost-desc">Highest {view === "events" ? "income" : "cost"}</SelectItem>
-            <SelectItem value="cost-asc">Lowest {view === "events" ? "income" : "cost"}</SelectItem>
+            <SelectItem value="date-desc">{t("newest_first")}</SelectItem>
+            <SelectItem value="date-asc">{t("oldest_first")}</SelectItem>
+            <SelectItem value="cost-desc">{t("highest")} {view === "events" ? t("income").toLowerCase() : t("cost").toLowerCase()}</SelectItem>
+            <SelectItem value="cost-asc">{t("lowest")} {view === "events" ? t("income").toLowerCase() : t("cost").toLowerCase()}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -128,7 +130,7 @@ const HistoryPage = ({ events, expenses, onDeleteEvent, onDeleteExpense, onEditE
       <div className="space-y-3">
         {view === "events" ? (
           <>
-            {pastEvents.length === 0 && <p className="text-muted-foreground text-center py-8">No past events yet.</p>}
+            {pastEvents.length === 0 && <p className="text-muted-foreground text-center py-8">{t("no_past_events")}</p>}
             {pastEvents.map((ev, index) => (
               <div
                 key={`event-${ev.id}-${index}`}
@@ -163,7 +165,7 @@ const HistoryPage = ({ events, expenses, onDeleteEvent, onDeleteExpense, onEditE
           </>
         ) : (
           <>
-            {sortedExpenses.length === 0 && <p className="text-muted-foreground text-center py-8">No expenses yet.</p>}
+            {sortedExpenses.length === 0 && <p className="text-muted-foreground text-center py-8">{t("no_expenses")}</p>}
             {sortedExpenses.map((ex, index) => (
               <div
                 key={`expense-${ex.id}-${index}`}
@@ -202,7 +204,6 @@ const HistoryPage = ({ events, expenses, onDeleteEvent, onDeleteExpense, onEditE
           if (view === "events") {
             return onDeleteEvent(contextMenu.id);
           } else {
-            // Seleziona il delete giusto tra eventi e spese
             if (contextMenu.id.startsWith("evt-")) {
               const realId = contextMenu.id.replace("evt-", "");
               return onDeleteEvent(realId);

@@ -5,8 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, MapPin, Link as LinkIcon } from "lucide-react";
-import { MarketEvent } from "@/lib/store";
+import { MarketEvent, useAppData } from "@/lib/store";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   open: boolean;
@@ -27,6 +28,22 @@ const AddEventDialog = ({ open, onClose, onAdd, editEvent }: Props) => {
 
   const [comuni, setComuni] = useState<string[]>([]);
   const [showComuni, setShowComuni] = useState(false);
+  const [showEventNames, setShowEventNames] = useState(false);
+
+  const { t } = useTranslation();
+  const { events } = useAppData();
+
+  const existingEventNames = useMemo(() => {
+    const names = events.map(e => e.name).filter(n => n && n !== "(Nessun Evento)");
+    return Array.from(new Set(names)).sort();
+  }, [events]);
+
+  const filteredEventNames = useMemo(() => {
+    if (!name) return existingEventNames.slice(0, 50);
+    return existingEventNames
+      .filter(n => n.toLowerCase().includes(name.toLowerCase()))
+      .slice(0, 50);
+  }, [existingEventNames, name]);
 
   useEffect(() => {
     fetch("https://raw.githubusercontent.com/matteocontrini/comuni-json/master/comuni.json")
@@ -54,6 +71,7 @@ const AddEventDialog = ({ open, onClose, onAdd, editEvent }: Props) => {
     setPaid(false);
     setIncome("");
     setShowComuni(false);
+    setShowEventNames(false);
   };
 
   useEffect(() => {
@@ -147,18 +165,52 @@ const AddEventDialog = ({ open, onClose, onAdd, editEvent }: Props) => {
         className="max-w-[90vw] rounded-2xl max-h-[90vh] overflow-y-auto"
         onInteractOutside={(e) => saving && e.preventDefault()}
         onEscapeKeyDown={(e) => saving && e.preventDefault()}
+        onOpenAutoFocus={(e) => e.preventDefault()}
       >
         <DialogHeader>
-          <DialogTitle className="text-xl">{isEdit ? "Edit Market Event" : "Add Market Event"}</DialogTitle>
+          <DialogTitle className="text-xl">{isEdit ? t("edit_market_event") : t("add_market_event")}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 mt-2">
-          <div>
-            <Label className="text-base font-semibold">Event Name <span className="text-muted-foreground font-normal text-sm">(optional)</span></Label>
-            <Input disabled={saving} className="mt-1 text-base h-12" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Fiori e Colori" />
+          
+          <div className="relative">
+            <Label className="text-base font-semibold">{t("event_name")} <span className="text-muted-foreground font-normal text-sm">{t("optional")}</span></Label>
+            <div className="relative mt-1">
+              <Input 
+                disabled={saving} 
+                className="text-base h-12 w-full" 
+                value={name} 
+                onChange={(e) => {
+                  setName(e.target.value);
+                  setShowEventNames(true);
+                }} 
+                onFocus={() => setShowEventNames(true)}
+                onBlur={() => setTimeout(() => setShowEventNames(false), 200)}
+                placeholder={t("event_name_placeholder")} 
+                autoComplete="off"
+              />
+            </div>
+            
+            {showEventNames && filteredEventNames.length > 0 && (
+              <div className="absolute z-[100] w-full mt-1 bg-popover text-popover-foreground border border-border rounded-md shadow-md max-h-56 overflow-y-auto">
+                {filteredEventNames.map(n => (
+                  <div
+                    key={n}
+                    className="px-3 py-3 hover:bg-accent hover:text-accent-foreground cursor-pointer text-base transition-colors"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      setName(n);
+                      setShowEventNames(false);
+                    }}
+                  >
+                    {n}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="relative">
-            <Label className="text-base font-semibold">Location (Comune) <span className="text-muted-foreground font-normal text-sm">(optional)</span></Label>
+            <Label className="text-base font-semibold">{t("location")} <span className="text-muted-foreground font-normal text-sm">{t("optional")}</span></Label>
             <div className="relative mt-1">
               <MapPin className="absolute left-3 top-3.5 text-muted-foreground" size={18} />
               <Input
@@ -171,7 +223,7 @@ const AddEventDialog = ({ open, onClose, onAdd, editEvent }: Props) => {
                 }}
                 onFocus={() => setShowComuni(true)}
                 onBlur={() => setTimeout(() => setShowComuni(false), 200)}
-                placeholder="Cerca un comune..."
+                placeholder={t("location_placeholder")}
                 autoComplete="off"
               />
             </div>
@@ -193,32 +245,32 @@ const AddEventDialog = ({ open, onClose, onAdd, editEvent }: Props) => {
                     </div>
                   ))
                 ) : (
-                  <div className="px-3 py-4 text-sm text-center text-muted-foreground">Nessun comune trovato</div>
+                  <div className="px-3 py-4 text-sm text-center text-muted-foreground">{t("no_location_found")}</div>
                 )}
               </div>
             )}
           </div>
 
           <div>
-            <Label className="text-base font-semibold">Maps URL <span className="text-muted-foreground font-normal text-sm">(optional)</span></Label>
+            <Label className="text-base font-semibold">{t("maps_url")} <span className="text-muted-foreground font-normal text-sm">{t("optional")}</span></Label>
             <div className="relative mt-1">
               <LinkIcon className="absolute left-3 top-3.5 text-muted-foreground" size={18} />
-              <Input disabled={saving} className="pl-10 mt-1 text-base h-12" value={mapsLink} onChange={(e) => setMapsLink(e.target.value)} placeholder="Paste link to Google/Apple Maps" />
+              <Input disabled={saving} className="pl-10 mt-1 text-base h-12" value={mapsLink} onChange={(e) => setMapsLink(e.target.value)} placeholder={t("maps_url_placeholder")} />
             </div>
           </div>
 
           <div>
-            <Label className="text-base font-semibold">Date</Label>
+            <Label className="text-base font-semibold">{t("date")}</Label>
             <Input disabled={saving} className="mt-1 text-base h-12" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
           <div>
-            <Label className="text-base font-semibold">Participation Cost (€) <span className="text-muted-foreground font-normal text-sm">(optional)</span></Label>
+            <Label className="text-base font-semibold">{t("participation_cost")} <span className="text-muted-foreground font-normal text-sm">{t("optional")}</span></Label>
             <Input disabled={saving} className="mt-1 text-base h-12" type="number" step="0.01" value={cost} onChange={(e) => setCost(e.target.value)} placeholder="0.00" />
           </div>
 
           {isEdit && (
             <div>
-              <Label className="text-base font-semibold text-primary">Income (€)</Label>
+              <Label className="text-base font-semibold text-primary">{t("income")}</Label>
               <Input
                 disabled={saving}
                 className="mt-1 text-base h-12 border-primary/50 bg-primary/5"
@@ -226,19 +278,19 @@ const AddEventDialog = ({ open, onClose, onAdd, editEvent }: Props) => {
                 step="0.01"
                 value={income}
                 onChange={(e) => setIncome(e.target.value)}
-                placeholder="0.00 (leave empty to remove)"
+                placeholder={`0.00 (${t("leave_empty_to_remove")})`}
               />
             </div>
           )}
 
           <div className="flex items-center gap-3 pt-1">
             <Checkbox disabled={saving || (cost.trim() === "" || parseFloat(cost) === 0)} id="paid" checked={cost.trim() === "" || parseFloat(cost) === 0 ? true : paid} onCheckedChange={(v) => setPaid(!!v)} className="w-6 h-6" />
-            <Label htmlFor="paid" className={`text-base font-semibold cursor-pointer ${saving || (cost.trim() === "" || parseFloat(cost) === 0) ? "opacity-50" : ""}`}>Already Paid Participation Cost</Label>
+            <Label htmlFor="paid" className={`text-base font-semibold cursor-pointer ${saving || (cost.trim() === "" || parseFloat(cost) === 0) ? "opacity-50" : ""}`}>{t("already_paid")}</Label>
           </div>
 
           <Button onClick={handleSubmit} disabled={saving} className="w-full h-12 text-base font-bold mt-2">
             {saving && <Loader2 className="animate-spin mr-2" size={18} />}
-            {saving ? (isEdit ? "Saving Changes…" : "Saving Event…") : (isEdit ? "Save Changes" : "Save Event")}
+            {saving ? (isEdit ? t("saving_changes") : t("saving_event")) : (isEdit ? t("save_changes") : t("save_event"))}
           </Button>
         </div>
       </DialogContent>

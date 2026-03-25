@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { Expense } from "@/lib/store";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   open: boolean;
@@ -20,6 +21,7 @@ const AddExpenseDialog = ({ open, onClose, onAdd, editExpense }: Props) => {
   const [date, setDate] = useState(today);
   const [cost, setCost] = useState("");
   const [saving, setSaving] = useState(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (open && editExpense) {
@@ -100,24 +102,24 @@ const AddExpenseDialog = ({ open, onClose, onAdd, editExpense }: Props) => {
         onEscapeKeyDown={(e) => saving && e.preventDefault()}
       >
         <DialogHeader>
-          <DialogTitle className="text-xl">{isEdit ? "Edit Expense" : "Add Expense"}</DialogTitle>
+          <DialogTitle className="text-xl">{isEdit ? t("edit_expense") : t("add_expense")}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 mt-2">
           <div>
-            <Label className="text-base font-semibold">Title</Label>
-            <Input disabled={saving} className="mt-1 text-base h-12" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Display Stand" />
+            <Label className="text-base font-semibold">{t("title")}</Label>
+            <Input disabled={saving} className="mt-1 text-base h-12" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("title_placeholder")} />
           </div>
           <div>
-            <Label className="text-base font-semibold">Date</Label>
+            <Label className="text-base font-semibold">{t("date")}</Label>
             <Input disabled={saving} className="mt-1 text-base h-12" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
           <div>
-            <Label className="text-base font-semibold">Cost (€)</Label>
+            <Label className="text-base font-semibold">{t("cost")}</Label>
             <Input disabled={saving} className="mt-1 text-base h-12" type="number" step="0.01" value={cost} onChange={(e) => setCost(e.target.value)} placeholder="0.00" />
           </div>
           <Button onClick={handleSubmit} disabled={saving} className="w-full h-12 text-base font-bold">
             {saving && <Loader2 className="animate-spin mr-2" size={18} />}
-            {saving ? (isEdit ? "Saving Changes…" : "Saving Expense…") : (isEdit ? "Save Changes" : "Save Expense")}
+            {saving ? (isEdit ? t("saving_changes") : t("saving_expense")) : (isEdit ? t("save_changes") : t("save_expense"))}
           </Button>
         </div>
       </DialogContent>

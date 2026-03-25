@@ -1,5 +1,5 @@
 import { Bell, BarChart3, Clock, TrendingUp, Plus } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
 
 interface BottomNavProps {
   active: number;
@@ -8,28 +8,32 @@ interface BottomNavProps {
 }
 
 const tabs = [
-  { icon: Bell, label: "Reminders" },
-  { icon: BarChart3, label: "Summary" },
-  { icon: Clock, label: "History" },
-  { icon: TrendingUp, label: "Stats" },
+  { icon: Bell, labelKey: "reminders_title" },
+  { icon: BarChart3, labelKey: "summary_title" },
+  { icon: Clock, labelKey: "history_title" },
+  { icon: TrendingUp, labelKey: "statistics_title" },
 ];
 
 const BottomNav = ({ active, onNavigate, onFabClick }: BottomNavProps) => {
+  const { t } = useTranslation();
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-nav border-t border-border z-50">
-      <div className="max-w-lg mx-auto grid grid-cols-5 items-end relative h-20">
+      {/* AGGIUNTO 'px-3' QUI SOTTO PER STRINGERE I BOTTONI VERSO IL CENTRO */}
+      <div className="max-w-lg mx-auto grid grid-cols-5 items-end relative h-20 px-3">
+        
         {tabs.slice(0, 2).map((tab, i) => {
           const isActive = active === i;
           return (
             <button
-              key={tab.label}
+              key={tab.labelKey}
               onClick={() => onNavigate(i)}
               className={`flex flex-col items-center justify-center gap-0.5 pt-2 pb-5 transition-colors ${
                 isActive ? "text-nav-active" : "text-nav-inactive"
               }`}
             >
               <tab.icon size={22} strokeWidth={isActive ? 2.5 : 2} />
-              <span className="text-[11px] font-semibold">{tab.label}</span>
+              <span className="text-[11px] font-semibold">{t(tab.labelKey)}</span>
             </button>
           );
         })}
@@ -48,14 +52,14 @@ const BottomNav = ({ active, onNavigate, onFabClick }: BottomNavProps) => {
           const isActive = active === idx;
           return (
             <button
-              key={tab.label}
+              key={tab.labelKey}
               onClick={() => onNavigate(idx)}
               className={`flex flex-col items-center justify-center gap-0.5 pt-2 pb-5 transition-colors ${
                 isActive ? "text-nav-active" : "text-nav-inactive"
               }`}
             >
               <tab.icon size={22} strokeWidth={isActive ? 2.5 : 2} />
-              <span className="text-[11px] font-semibold">{tab.label}</span>
+              <span className="text-[11px] font-semibold">{t(tab.labelKey)}</span>
             </button>
           );
         })}

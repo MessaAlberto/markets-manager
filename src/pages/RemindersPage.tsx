@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   events: MarketEvent[];
@@ -25,6 +26,7 @@ const RemindersPage = ({ events, onUpdateEvent, onDeleteEvent, onEditEvent }: Pr
   const [paymentDialog, setPaymentDialog] = useState<{ open: boolean; id: string; name: string; cost: number }>({ open: false, id: "", name: "", cost: 0 });
   const [reminderForm, setReminderForm] = useState<Reminder>({ message: "", date: "", time: "" });
   const [saving, setSaving] = useState(false);
+  const { t } = useTranslation();
 
   const filtered = events.filter((ev) => {
     const eventDate = new Date(ev.date);
@@ -73,7 +75,7 @@ const RemindersPage = ({ events, onUpdateEvent, onDeleteEvent, onEditEvent }: Pr
 
   const handleSaveReminder = async () => {
     if (!reminderForm.message || !reminderForm.date || !reminderForm.time) {
-      toast.error("Please fill in all reminder fields", { duration: 2500 });
+      toast.error(t("fill_reminder_fields"), { duration: 2500 });
       return;
     }
 
@@ -105,7 +107,7 @@ const RemindersPage = ({ events, onUpdateEvent, onDeleteEvent, onEditEvent }: Pr
       });
 
       if (response.status === 401) {
-        toast.error("Wrong or changed PIN. Please log in again.");
+        toast.error(t("wrong_pin"));
         setReminderDialog({ open: false, id: "" });
         return;
       }
@@ -113,17 +115,17 @@ const RemindersPage = ({ events, onUpdateEvent, onDeleteEvent, onEditEvent }: Pr
       const data = await response.json();
 
       if (data.success) {
-        toast.success("Reminder saved successfully!", { duration: 2500 });
+        toast.success(t("reminder_saved"), { duration: 2500 });
         downloadICS(currentEvent, reminderForm);
         onUpdateEvent(reminderDialog.id, { reminder: { ...reminderForm } });
         setReminderDialog({ open: false, id: "" });
         setReminderForm({ message: "", date: "", time: "" });
       } else {
-        toast.error(data.message || "Failed to save reminder", { duration: 2500 });
+        toast.error(data.message || t("failed_save_reminder"), { duration: 2500 });
       }
     } catch (err) {
       console.error(err);
-      toast.error("Server error", { duration: 2500 });
+      toast.error(t("server_error"), { duration: 2500 });
     } finally {
       setSaving(false);
     }
@@ -158,7 +160,7 @@ const RemindersPage = ({ events, onUpdateEvent, onDeleteEvent, onEditEvent }: Pr
       });
 
       if (response.status === 401) {
-        toast.error("Wrong or changed PIN. Please log in again.");
+        toast.error(t("wrong_pin"));
         setPaymentDialog({ open: false, id: "", name: "", cost: 0 });
         return;
       }
@@ -166,15 +168,15 @@ const RemindersPage = ({ events, onUpdateEvent, onDeleteEvent, onEditEvent }: Pr
       const data = await response.json();
 
       if (data.success) {
-        toast.success("Payment marked as paid!", { duration: 2500 });
+        toast.success(t("payment_marked_paid"), { duration: 2500 });
         onUpdateEvent(paymentDialog.id, { alreadyPaid: true });
         setPaymentDialog({ open: false, id: "", name: "", cost: 0 });
       } else {
-        toast.error(data.message || "Failed to confirm payment", { duration: 2500 });
+        toast.error(data.message || t("failed_confirm_payment"), { duration: 2500 });
       }
     } catch (err) {
       console.error(err);
-      toast.error("Server error", { duration: 2500 });
+      toast.error(t("server_error"), { duration: 2500 });
     } finally {
       setSaving(false);
     }
@@ -185,9 +187,9 @@ const RemindersPage = ({ events, onUpdateEvent, onDeleteEvent, onEditEvent }: Pr
   return (
     <TooltipProvider>
       <div className="px-4 pt-2 pb-4">
-        <h1 className="text-2xl font-extrabold mb-4">Reminders</h1>
+        <h1 className="text-2xl font-extrabold mb-4">{t("reminders_title")}</h1>
         {sorted.length === 0 && (
-          <p className="text-muted-foreground text-center py-8">All caught up! No pending actions.</p>
+          <p className="text-muted-foreground text-center py-8">{t("all_caught_up")}</p>
         )}
         <div className="space-y-3">
           {sorted.map((ev) => {
@@ -226,7 +228,7 @@ const RemindersPage = ({ events, onUpdateEvent, onDeleteEvent, onEditEvent }: Pr
                         onClick={() => setIncomeDialog({ open: true, id: ev.id, name: ev.name })}
                         className="flex items-center gap-1 px-3 py-2 rounded-lg bg-income text-primary-foreground font-bold text-sm active:scale-95 transition-transform"
                       >
-                        <DollarSign size={16} /> Add Income
+                        <DollarSign size={16} /> {t("add_income")}
                       </button>
                     ) : (
                       <>
@@ -245,7 +247,7 @@ const RemindersPage = ({ events, onUpdateEvent, onDeleteEvent, onEditEvent }: Pr
                               <Navigation size={18} className="text-muted-foreground" />
                             </button>
                           </TooltipTrigger>
-                          <TooltipContent>Get directions</TooltipContent>
+                          <TooltipContent>{t("get_directions")}</TooltipContent>
                         </Tooltip>
 
                         <Tooltip>
@@ -264,7 +266,7 @@ const RemindersPage = ({ events, onUpdateEvent, onDeleteEvent, onEditEvent }: Pr
                               <Bell size={18} className={hasReminder ? "text-income" : "text-muted-foreground"} />
                             </button>
                           </TooltipTrigger>
-                          <TooltipContent>{hasReminder ? "Reminder set" : "Set reminder"}</TooltipContent>
+                          <TooltipContent>{hasReminder ? t("reminder_set") : t("set_reminder")}</TooltipContent>
                         </Tooltip>
 
                         {missingPayment && (
@@ -278,7 +280,7 @@ const RemindersPage = ({ events, onUpdateEvent, onDeleteEvent, onEditEvent }: Pr
                                 <span className="text-expense font-bold text-xs">-€{ev.participationCost}</span>
                               </button>
                             </TooltipTrigger>
-                            <TooltipContent>Missing payment: €{ev.participationCost}</TooltipContent>
+                            <TooltipContent>{t("missing_payment")}: €{ev.participationCost}</TooltipContent>
                           </Tooltip>
                         )}
                       </>
@@ -313,24 +315,24 @@ const RemindersPage = ({ events, onUpdateEvent, onDeleteEvent, onEditEvent }: Pr
             onEscapeKeyDown={(e) => saving && e.preventDefault()}
           >
             <DialogHeader>
-              <DialogTitle className="text-xl">Set Reminder</DialogTitle>
+              <DialogTitle className="text-xl">{t("set_reminder")}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 mt-2">
               <div>
-                <Label className="text-base font-semibold">Message</Label>
-                <Input disabled={saving} className="mt-1 text-base h-12" value={reminderForm.message} onChange={(e) => setReminderForm((f) => ({ ...f, message: e.target.value }))} placeholder="e.g. Prepare stock" />
+                <Label className="text-base font-semibold">{t("message")}</Label>
+                <Input disabled={saving} className="mt-1 text-base h-12" value={reminderForm.message} onChange={(e) => setReminderForm((f) => ({ ...f, message: e.target.value }))} placeholder={t("message_placeholder")} />
               </div>
               <div>
-                <Label className="text-base font-semibold">Date</Label>
+                <Label className="text-base font-semibold">{t("date")}</Label>
                 <Input disabled={saving} className="mt-1 text-base h-12" type="date" value={reminderForm.date} onChange={(e) => setReminderForm((f) => ({ ...f, date: e.target.value }))} />
               </div>
               <div>
-                <Label className="text-base font-semibold">Time</Label>
+                <Label className="text-base font-semibold">{t("time")}</Label>
                 <Input disabled={saving} className="mt-1 text-base h-12" type="time" value={reminderForm.time} onChange={(e) => setReminderForm((f) => ({ ...f, time: e.target.value }))} />
               </div>
               <Button onClick={handleSaveReminder} disabled={saving} className="w-full h-12 text-base font-bold">
                 {saving && <Loader2 className="animate-spin mr-2" size={18} />}
-                {saving ? "Saving..." : "Save Reminder"}
+                {saving ? t("saving") : t("save_reminder")}
               </Button>
             </div>
           </DialogContent>
@@ -343,15 +345,15 @@ const RemindersPage = ({ events, onUpdateEvent, onDeleteEvent, onEditEvent }: Pr
             onEscapeKeyDown={(e) => saving && e.preventDefault()}
           >
             <DialogHeader>
-              <DialogTitle className="text-xl">Confirm Payment</DialogTitle>
+              <DialogTitle className="text-xl">{t("confirm_payment")}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 mt-2">
               <p className="text-muted-foreground text-sm">
-                Have you completed the payment of <strong>€{paymentDialog.cost}</strong> for <strong>{paymentDialog.name}</strong>?
+                {t("confirm_payment_prefix")} <strong>€{paymentDialog.cost}</strong> {t("for")} <strong>{paymentDialog.name}</strong>?
               </p>
               <Button onClick={handleConfirmPayment} disabled={saving} className="w-full h-12 text-base font-bold">
                 {saving && <Loader2 className="animate-spin mr-2" size={18} />}
-                {saving ? "Confirming..." : "Yes, mark as paid"}
+                {saving ? t("confirming") : t("mark_as_paid")}
               </Button>
             </div>
           </DialogContent>

@@ -7,9 +7,11 @@ import RemindersPage from "@/pages/RemindersPage";
 import SummaryPage from "@/pages/SummaryPage";
 import HistoryPage from "@/pages/HistoryPage";
 import StatisticsPage from "@/pages/StatisticsPage";
+import LanguageSwitcher from "@/components/LanguageSwitcher"; // IMPORTATO
 import { useAppData, MarketEvent, Expense } from "@/lib/store";
 import { Loader2, Lock, KeyRound } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 const Index = () => {
   const [pin, setPin] = useState("");
@@ -25,6 +27,7 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
 
   const { events, expenses, addEvent, updateEvent, deleteEvent, addExpense, updateExpense, deleteExpense, setInitialData } = useAppData();
+  const { t } = useTranslation();
 
   useEffect(() => {
     const savedPin = localStorage.getItem("mercatini-pin");
@@ -59,7 +62,7 @@ const Index = () => {
         });
 
         if (response.status === 401) {
-          toast.error("Wrong or changed PIN. Please log in again.");
+          toast.error(t("wrong_pin"));
           handleLogout();
           return;
         }
@@ -68,18 +71,18 @@ const Index = () => {
         if (data.success) {
           setInitialData(data.events, data.expenses);
         } else {
-          toast.error("Failed to load data: " + (data.message || "Unknown error"));
+          toast.error(t("failed_load_data") + (data.message || t("unknown_error")));
         }
       } catch (error) {
         console.error("Error fetching initial data:", error);
-        toast.error("Server error while loading data");
+        toast.error(t("server_error_loading"));
       } finally {
         setLoading(false);
       }
     };
 
     fetchInitialData();
-  }, [isAuthenticated, setInitialData]);
+  }, [isAuthenticated, setInitialData, t]);
 
   const handleEditEvent = (event: MarketEvent) => {
     setEditingEvent(event);
@@ -123,15 +126,15 @@ const Index = () => {
         body: JSON.stringify({ id })
       });
       if (res.status === 401) {
-        toast.error("Wrong or changed PIN. Please log in again.");
+        toast.error(t("wrong_pin"));
         handleLogout(); return;
       }
       const data = await res.json();
       if (data.success) {
         deleteEvent(id);
-        toast.success("Event deleted");
+        toast.success(t("event_deleted"));
       }
-    } catch (e) { toast.error("Server error"); }
+    } catch (e) { toast.error(t("server_error")); }
   };
 
   const handleServerDeleteExpense = async (id: string) => {
@@ -146,15 +149,15 @@ const Index = () => {
         body: JSON.stringify({ id })
       });
       if (res.status === 401) {
-        toast.error("Wrong or changed PIN. Please log in again.");
+        toast.error(t("wrong_pin"));
         handleLogout(); return;
       }
       const data = await res.json();
       if (data.success) {
         deleteExpense(id);
-        toast.success("Expense deleted");
+        toast.success(t("expense_deleted"));
       }
-    } catch (e) { toast.error("Server error"); }
+    } catch (e) { toast.error(t("server_error")); }
   };
 
   if (authChecking) return null;
@@ -166,8 +169,8 @@ const Index = () => {
           <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-6">
             <Lock className="text-primary" size={32} />
           </div>
-          <h1 className="text-2xl font-extrabold mb-2">Private Area</h1>
-          <p className="text-muted-foreground mb-8 text-sm">Enter your PIN to access your data.</p>
+          <h1 className="text-2xl font-extrabold mb-2">{t("private_area")}</h1>
+          <p className="text-muted-foreground mb-8 text-sm">{t("enter_pin")}</p>
 
           <form onSubmit={handleLogin} className="w-full space-y-4">
             <div className="relative">
@@ -176,7 +179,7 @@ const Index = () => {
                 type="password"
                 value={pin}
                 onChange={(e) => setPin(e.target.value)}
-                placeholder="Secret PIN"
+                placeholder={t("secret_pin")}
                 className="w-full h-14 pl-12 pr-4 rounded-xl border border-border bg-background text-lg focus:ring-2 focus:ring-primary outline-none transition-all"
                 autoFocus
               />
@@ -185,7 +188,7 @@ const Index = () => {
               type="submit"
               className="w-full h-14 bg-primary text-primary-foreground font-bold rounded-xl active:scale-[0.98] transition-transform text-lg"
             >
-              Continue
+              {t("continue")}
             </button>
           </form>
         </div>
@@ -197,13 +200,16 @@ const Index = () => {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center max-w-lg mx-auto">
         <Loader2 className="animate-spin text-primary mb-4" size={48} />
-        <p className="text-muted-foreground font-semibold text-lg">Synchronizing...</p>
+        <p className="text-muted-foreground font-semibold text-lg">{t("synchronizing")}</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background max-w-lg mx-auto pb-20">
+    <div className="min-h-screen bg-background relative max-w-lg mx-auto pb-20">
+      
+      <LanguageSwitcher />
+
       <div className="overflow-y-auto pt-2">
         {page === 0 && <RemindersPage events={events} onUpdateEvent={updateEvent} onDeleteEvent={handleServerDeleteEvent} onEditEvent={handleEditEvent} />}
         {page === 1 && <SummaryPage events={events} expenses={expenses} />}

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   open: boolean;
@@ -17,6 +18,7 @@ interface Props {
 const AddIncomeDialog = ({ open, onClose, eventId, eventName, onAdd }: Props) => {
   const [income, setIncome] = useState("");
   const [saving, setSaving] = useState(false);
+  const { t } = useTranslation();
 
   const handleSubmit = async () => {
     try {
@@ -72,17 +74,17 @@ const AddIncomeDialog = ({ open, onClose, eventId, eventName, onAdd }: Props) =>
         onEscapeKeyDown={(e) => saving && e.preventDefault()}
       >
         <DialogHeader>
-          <DialogTitle className="text-xl">Add Income</DialogTitle>
+          <DialogTitle className="text-xl">{t("add_income")}</DialogTitle>
         </DialogHeader>
-        <p className="text-muted-foreground text-sm">For: <strong>{eventName}</strong></p>
+        <p className="text-muted-foreground text-sm">{t("for")}: <strong>{eventName}</strong></p>
         <div className="space-y-4 mt-2">
           <div>
-            <Label className="text-base font-semibold">Income (€)</Label>
+            <Label className="text-base font-semibold">{t("income")}</Label>
             <Input disabled={saving} className="mt-1 text-base h-12" type="number" step="0.01" value={income} onChange={(e) => setIncome(e.target.value)} placeholder="0.00" />
           </div>
           <Button onClick={handleSubmit} disabled={saving} className="w-full h-12 text-base font-bold">
             {saving && <Loader2 className="animate-spin mr-2" size={18} />}
-            {saving ? "Saving…" : "Save Income"}
+            {saving ? t("saving") : t("save_income")}
           </Button>
         </div>
       </DialogContent>

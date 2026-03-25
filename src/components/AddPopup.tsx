@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingCart, CalendarPlus, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface AddPopupProps {
   open: boolean;
@@ -9,6 +10,8 @@ interface AddPopupProps {
 }
 
 const AddPopup = ({ open, onClose, onAddExpense, onAddEvent }: AddPopupProps) => {
+  const { t } = useTranslation();
+
   return (
     <AnimatePresence>
       {open && (
@@ -28,7 +31,7 @@ const AddPopup = ({ open, onClose, onAddExpense, onAddEvent }: AddPopupProps) =>
             className="fixed bottom-24 inset-x-0 mx-auto -translate-x-1/2 z-50 bg-card rounded-2xl shadow-2xl p-5 w-[85vw] max-w-sm"
           >
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold">Add New</h3>
+              <h3 className="text-lg font-bold">{t("add_new")}</h3>
               <button onClick={onClose} className="p-1 rounded-full hover:bg-muted">
                 <X size={20} />
               </button>
@@ -41,7 +44,7 @@ const AddPopup = ({ open, onClose, onAddExpense, onAddEvent }: AddPopupProps) =>
                 <div className="w-12 h-12 rounded-full bg-expense flex items-center justify-center">
                   <ShoppingCart size={22} className="text-primary-foreground" />
                 </div>
-                <span className="font-bold text-sm">Add Expense</span>
+                <span className="font-bold text-sm">{t("add_expense")}</span>
               </button>
               <button
                 onClick={() => { onAddEvent(); onClose(); }}
@@ -50,7 +53,7 @@ const AddPopup = ({ open, onClose, onAddExpense, onAddEvent }: AddPopupProps) =>
                 <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center">
                   <CalendarPlus size={22} className="text-primary-foreground" />
                 </div>
-                <span className="font-bold text-sm">Add Event</span>
+                <span className="font-bold text-sm">{t("add_event")}</span>
               </button>
             </div>
           </motion.div>
