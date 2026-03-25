@@ -77,7 +77,7 @@ To deploy your own instance of this app, you need to set up a Google Service Acc
 If you want to run the app locally on your machine:
 1. Clone the repository: `git clone <your-repo-url>`
 2. Install dependencies: `npm install`
-3. Create a `.env` file in the root directory based on [`.env.example`](./env.example)
+3. Create a `.env` file in the root directory based on [`.env.example`](./.env.example)
 4. Run the development server: `npm run dev`
 
 ### Step 4: Deploy to Vercel
