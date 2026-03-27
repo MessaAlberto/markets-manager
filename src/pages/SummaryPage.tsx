@@ -19,23 +19,36 @@ const SummaryPage = ({ events, expenses }: Props) => {
   const totalProfit = totalIncome - totalExpenses;
 
   const months = new Map<string, { income: number; expenses: number }>();
+  const years = new Map<string, { income: number; expenses: number }>();
 
   events.forEach((e) => {
-    const key = format(new Date(e.date), "yyyy-MM");
-    const m = months.get(key) || { income: 0, expenses: 0 };
+    const monthKey = format(new Date(e.date), "yyyy-MM");
+    const m = months.get(monthKey) || { income: 0, expenses: 0 };
     m.income += e.income || 0;
     m.expenses += e.participationCost || 0;
-    months.set(key, m);
+    months.set(monthKey, m);
+
+    const yearKey = format(new Date(e.date), "yyyy");
+    const y = years.get(yearKey) || { income: 0, expenses: 0 };
+    y.income += e.income || 0;
+    y.expenses += e.participationCost || 0;
+    years.set(yearKey, y);
   });
 
   expenses.forEach((e) => {
-    const key = format(new Date(e.date), "yyyy-MM");
-    const m = months.get(key) || { income: 0, expenses: 0 };
+    const monthKey = format(new Date(e.date), "yyyy-MM");
+    const m = months.get(monthKey) || { income: 0, expenses: 0 };
     m.expenses += e.cost || 0;
-    months.set(key, m);
+    months.set(monthKey, m);
+
+    const yearKey = format(new Date(e.date), "yyyy");
+    const y = years.get(yearKey) || { income: 0, expenses: 0 };
+    y.expenses += e.cost || 0;
+    years.set(yearKey, y);
   });
 
   const sortedMonths = [...months.entries()].sort((a, b) => b[0].localeCompare(a[0]));
+  const sortedYears = [...years.entries()].sort((a, b) => b[0].localeCompare(a[0]));
 
   return (
     <div className="px-4 pt-2 pb-4">
@@ -59,16 +72,38 @@ const SummaryPage = ({ events, expenses }: Props) => {
         </div>
       </div>
 
+      <h2 className="font-bold text-lg mb-3">{t("yearly_breakdown")}</h2>
+      <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden mb-6">
+        <div className="grid grid-cols-4 gap-0 text-xs font-bold text-muted-foreground border-b border-border px-3 py-2.5">
+          <span>{t("year")}</span>
+          <span className="text-right">{t("expenses")}</span>
+          <span className="text-right">{t("income")}</span>
+          <span className="text-right">{t("profit")}</span>
+        </div>
+        {sortedYears.map(([year, data], i) => {
+          const profit = data.income - data.expenses;
+          return (
+            <div
+              key={year}
+              className={`grid grid-cols-4 gap-0 px-3 py-3 text-sm ${i < sortedYears.length - 1 ? "border-b border-border" : ""}`}
+            >
+              <span className="font-bold">{year}</span>
+              <span className="text-right font-bold text-expense">€{data.expenses.toFixed(0)}</span>
+              <span className="text-right font-bold text-income">€{data.income.toFixed(0)}</span>
+              <span className={`text-right font-bold ${profit >= 0 ? "text-income" : "text-expense"}`}>€{profit.toFixed(0)}</span>
+            </div>
+          );
+        })}
+      </div>
+
       <h2 className="font-bold text-lg mb-3">{t("monthly_breakdown")}</h2>
       <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
-        {/* Header */}
         <div className="grid grid-cols-4 gap-0 text-xs font-bold text-muted-foreground border-b border-border px-3 py-2.5">
           <span>{t("month")}</span>
           <span className="text-right">{t("expenses")}</span>
           <span className="text-right">{t("income")}</span>
           <span className="text-right">{t("profit")}</span>
         </div>
-        {/* Rows */}
         {sortedMonths.map(([month, data], i) => {
           const profit = data.income - data.expenses;
           return (

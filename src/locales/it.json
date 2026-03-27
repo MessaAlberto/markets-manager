@@ -113,6 +113,8 @@
   "profit": "Profitto",
   "monthly_breakdown": "Resoconto Mensile",
   "month": "Mese",
+  "yearly_breakdown": "Resoconto Annuo",
+  "year": "Anno",
 
   "name_or_location_required": "Inserisci il Nome dell'evento o il Luogo",
   "no_location": "(Nessun Luogo)",

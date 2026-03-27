@@ -113,6 +113,8 @@
   "profit": "Profit",
   "monthly_breakdown": "Monthly Breakdown",
   "month": "Month",
+  "yearly_breakdown": "Yearly Breakdown",
+  "year": "Year",
 
   "name_or_location_required": "Please provide either an Event Name or a Location",
   "no_location": "(No Location)",
