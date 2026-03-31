@@ -37,7 +37,17 @@ const RemindersPage = ({ events, onUpdateEvent, onDeleteEvent, onEditEvent }: Pr
     return true;
   });
 
-  const sorted = [...filtered].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const sorted = [...filtered].sort((a, b) => {
+    const dateA = new Date(a.date);
+    const dateB = new Date(b.date);
+    const pastA = isPast(dateA) && !isToday(dateA);
+    const pastB = isPast(dateB) && !isToday(dateB);
+
+    if (pastA && !pastB) return -1;
+    if (!pastA && pastB) return 1;
+
+    return dateA.getTime() - dateB.getTime();
+  });
 
   const handleLongPress = (id: string, e: React.TouchEvent | React.MouseEvent) => {
     e.preventDefault();

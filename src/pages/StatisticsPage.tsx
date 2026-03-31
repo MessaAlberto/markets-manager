@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { MarketEvent, Expense } from "@/lib/store";
 import { format, subMonths, subYears, parse } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
@@ -76,7 +76,7 @@ function buildMarketTimeMap(
     const d = map.get(k) || { count: 0, totalIncome: 0, totalCost: 0 };
     d.count++;
     d.totalIncome += item.income || 0;
-    d.totalCost += item.participationCost || 0;
+    d.totalCost += item.alreadyPaid ? (item.participationCost || 0) : 0;
     map.set(k, d);
   });
   return [...map.entries()].map(([name, d]) => ({
@@ -96,6 +96,22 @@ const StatisticsPage = ({ events, expenses }: Props) => {
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
   const [specificPeriod, setSpecificPeriod] = useState("");
   const { t } = useTranslation();
+
+  // Hide tooltips on page scroll
+  useEffect(() => {
+    const handleGlobalScroll = () => {
+      document.querySelectorAll('.recharts-surface').forEach(svg => {
+        svg.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }));
+      });
+    };
+    window.addEventListener('scroll', handleGlobalScroll, { passive: true });
+    window.addEventListener('touchmove', handleGlobalScroll, { passive: true });
+    
+    return () => {
+      window.removeEventListener('scroll', handleGlobalScroll);
+      window.removeEventListener('touchmove', handleGlobalScroll);
+    };
+  }, []);
 
   const emptyLocation = t("no_location");
   const emptyEvent = t("no_event");
@@ -177,7 +193,7 @@ const StatisticsPage = ({ events, expenses }: Props) => {
       const d = map.get(k) || { count: 0, totalIncome: 0, totalCost: 0 };
       d.count++;
       d.totalIncome += e.income || 0;
-      d.totalCost += e.participationCost || 0;
+      d.totalCost += e.alreadyPaid ? (e.participationCost || 0) : 0;
       map.set(k, d);
     });
     return [...map.entries()].map(([name, d]) => ({
@@ -215,6 +231,14 @@ const StatisticsPage = ({ events, expenses }: Props) => {
     return sortChronologically(raw, "yyyy");
   }, [filteredExpenses]);
 
+  // Hide tooltips on chart container scroll
+  const handleChartScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const svgs = e.currentTarget.querySelectorAll('.recharts-surface');
+    svgs.forEach(svg => {
+      svg.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }));
+    });
+  };
+
   const ChartCard = ({ title, dataKey, color, data: chartData }: { title: string; dataKey: string; color: string; data: any[] }) => (
     <div className="bg-card rounded-xl p-2 border border-border shadow-sm">
       <h3 className="font-bold text-sm mb-1 ml-1">{title}</h3>
@@ -231,7 +255,7 @@ const StatisticsPage = ({ events, expenses }: Props) => {
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <div className="flex-1 overflow-x-auto h-full border-l border-border/50">
+          <div className="flex-1 overflow-x-auto h-full border-l border-border/50" onScroll={handleChartScroll}>
             <div style={{ minWidth: chartData.length > 5 ? `${chartData.length * 28}px` : '100%', height: '100%' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart

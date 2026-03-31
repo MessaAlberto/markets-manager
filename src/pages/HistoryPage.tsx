@@ -44,7 +44,7 @@ const HistoryPage = ({ events, expenses, onDeleteEvent, onDeleteExpense, onEditE
       .map(e => ({ ...e, isEvent: false }));
 
     const evtExpenses = events
-      .filter((e) => e.id && e.id.trim() !== "" && (e.participationCost || 0) > 0)
+      .filter((e) => e.id && e.id.trim() !== "" && (e.participationCost || 0) > 0 && e.alreadyPaid)
       .map(e => {
         const locationName = e.location?.trim() ? e.location : (e.name || "Mercatino");
         return {
