@@ -7,7 +7,7 @@ import RemindersPage from "@/pages/RemindersPage";
 import SummaryPage from "@/pages/SummaryPage";
 import HistoryPage from "@/pages/HistoryPage";
 import StatisticsPage from "@/pages/StatisticsPage";
-import LanguageSwitcher from "@/components/LanguageSwitcher"; // IMPORTATO
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useAppData, MarketEvent, Expense } from "@/lib/store";
 import { Loader2, Lock, KeyRound } from "lucide-react";
 import { toast } from "sonner";
@@ -28,6 +28,10 @@ const Index = () => {
 
   const { events, expenses, addEvent, updateEvent, deleteEvent, addExpense, updateExpense, deleteExpense, setInitialData } = useAppData();
   const { t } = useTranslation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [page]);
 
   useEffect(() => {
     const savedPin = localStorage.getItem("mercatini-pin");

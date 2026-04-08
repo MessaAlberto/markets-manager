@@ -3,7 +3,8 @@ import { MapPin, Calendar, Bell, CreditCard, DollarSign, Navigation, Loader2 } f
 import { MarketEvent, Reminder } from "@/lib/store";
 import EventContextMenu from "@/components/EventContextMenu";
 import AddIncomeDialog from "@/components/AddIncomeDialog";
-import { format, isPast, isToday } from "date-fns";
+import MarketCalendar from "@/components/MarketCalendar";
+import { format, isPast, isToday, isSameDay } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +27,8 @@ const RemindersPage = ({ events, onUpdateEvent, onDeleteEvent, onEditEvent }: Pr
   const [paymentDialog, setPaymentDialog] = useState<{ open: boolean; id: string; name: string; cost: number }>({ open: false, id: "", name: "", cost: 0 });
   const [reminderForm, setReminderForm] = useState<Reminder>({ message: "", date: "", time: "" });
   const [saving, setSaving] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+
   const { t } = useTranslation();
 
   const filtered = events.filter((ev) => {
@@ -48,6 +51,10 @@ const RemindersPage = ({ events, onUpdateEvent, onDeleteEvent, onEditEvent }: Pr
 
     return dateA.getTime() - dateB.getTime();
   });
+
+  const displayEvents = selectedDate
+    ? events.filter(ev => isSameDay(new Date(ev.date), selectedDate))
+    : sorted;
 
   const handleLongPress = (id: string, e: React.TouchEvent | React.MouseEvent) => {
     e.preventDefault();
@@ -213,12 +220,25 @@ const RemindersPage = ({ events, onUpdateEvent, onDeleteEvent, onEditEvent }: Pr
   return (
     <TooltipProvider>
       <div className="px-4 pt-2 pb-4">
-        <h1 className="text-2xl font-extrabold mb-4">{t("reminders_title")}</h1>
-        {sorted.length === 0 && (
-          <p className="text-muted-foreground text-center py-8">{t("all_caught_up")}</p>
+
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-2xl font-extrabold">{t("reminders_title")}</h1>
+        </div>
+
+        <MarketCalendar
+          events={events}
+          selectedDate={selectedDate}
+          onSelectDate={setSelectedDate}
+        />
+
+        {displayEvents.length === 0 && (
+          <p className="text-muted-foreground text-center py-8">
+            {selectedDate ? t("no_events_on_day") : t("all_caught_up")}
+          </p>
         )}
+
         <div className="space-y-3">
-          {sorted.map((ev) => {
+          {displayEvents.map((ev) => {
             const eventDate = new Date(ev.date);
             const past = isPast(eventDate) && !isToday(eventDate);
             const hasReminder = !!ev.reminder;

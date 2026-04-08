@@ -133,5 +133,9 @@
   "missing_income_fields": "Per favore, compila tutti i campi richiesti",
   "add_income_success": "Entrata aggiunta con successo!",
   "update_income_success": "Entrata aggiornata con successo!",
-  "failed_save_income": "Impossibile salvare l'entrata"
+  "failed_save_income": "Impossibile salvare l'entrata",
+
+  "calendar_view": "Calendario",
+  "list_view": "Elenco",
+  "no_events_on_day": "Nessun evento in questa data"
 }
