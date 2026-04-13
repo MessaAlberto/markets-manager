@@ -243,6 +243,7 @@ const RemindersPage = ({ events, onUpdateEvent, onDeleteEvent, onEditEvent }: Pr
             const past = isPast(eventDate) && !isToday(eventDate);
             const hasReminder = !!ev.reminder;
             const missingPayment = !ev.alreadyPaid;
+            const missingIncome = ev.income == null;
 
             return (
               <div
@@ -274,7 +275,7 @@ const RemindersPage = ({ events, onUpdateEvent, onDeleteEvent, onEditEvent }: Pr
                     </div>
                   </div>
                   <div className="flex gap-2 items-center ml-2 shrink-0">
-                    {past ? (
+                    {past && missingIncome ? (
                       <button
                         onClick={() => setIncomeDialog({ open: true, id: ev.id, name: ev.name || ev.location })}
                         className="flex items-center gap-1 px-3 py-2 rounded-lg bg-income text-primary-foreground font-bold text-sm active:scale-95 transition-transform"
